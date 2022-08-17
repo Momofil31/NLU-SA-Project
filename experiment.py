@@ -8,7 +8,7 @@ import pandas as pd
 
 from models.models import SentimentGRU, SentimentCNN
 from utils import init_weights
-from settings import N_FOLDS, EPOCHS, BATCH_SIZE, LR, RANDOM_SEED, TRAIN_TEST_SPLIT, SentimentGRU_config, SentimentCNN_config
+from settings import N_FOLDS, EPOCHS, BATCH_SIZE, LR, RANDOM_SEED, TRAIN_TEST_SPLIT, SentimentGRU_config, SentimentCNN_config, DEVICE
 from data_processing import Lang, CustomDataset, collate_fn
 
 from nltk.corpus import movie_reviews, subjectivity
@@ -137,6 +137,7 @@ class Experiment:
             else:
                 print("Model name does not exist")
                 return
+            model.to(DEVICE)
 
             run = wandb.init(
                 project="NLU_SA",
@@ -260,8 +261,8 @@ class Experiment:
         }
         torch.save(save_dict, path)
 
-    def load_weights(self, model, optimizer, weights_path, device, scheduler=None):
-        checkpoint = torch.load(weights_path, map_location=device)
+    def load_weights(self, model, optimizer, weights_path, DEVICE, scheduler=None):
+        checkpoint = torch.load(weights_path, map_location=DEVICE)
         epoch = checkpoint['epoch']
         model.load_state_dict(checkpoint['model_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
