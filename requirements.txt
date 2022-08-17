@@ -1,0 +1,12 @@
+numpy
+torch
+torchvision 
+torchaudio
+torchtext
+matplotlib
+pandas
+nltk
+spacy
+scikit-learn
+wandb
+
