@@ -4,6 +4,19 @@ from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 from settings import PAD_TOKEN
 
 
+class SoftAttention(nn.Module):
+    def __init__(self, dim, dropout=0.1):
+        super(SoftAttention, self).__init__()
+        self.attention = nn.Sequential(
+            nn.Dropout(dropout),
+            nn.Linear(dim, 1),
+            nn.Softmax(dim=0)
+        )
+
+    def forward(self, context_vector):
+        return self.attention(context_vector)
+
+
 class SentimentGRU(nn.Module):
     '''
         Architecture based on the one seen during lab
@@ -17,8 +30,11 @@ class SentimentGRU(nn.Module):
         self.num_layers = config["num_layers"]
         self.dropout_ratio = config["dropout_ratio"]
         self.bidirectional = config["bidirectional"]
-
+        self.attention = config["attention"]
         self.num_dir = 2 if self.bidirectional else 1
+
+        if self.attention:
+            self.attention_module = SoftAttention(self.hidden_size*self.num_dir)
 
         self.embedding = nn.Embedding(vocab_size, self.emb_size, padding_idx=pad_index)
         self.utt_encoder = nn.GRU(self.emb_size, self.hidden_size, self.num_layers, bidirectional=self.bidirectional, dropout=self.dropout_ratio)
@@ -44,22 +60,26 @@ class SentimentGRU(nn.Module):
         # "A potential issue with this encoder–decoder approach is that a neural network
         # needs to be able to compress all the necessary information of a source sentence into a fixed-length vector.
         # This may make it difficult for the neural network to cope with long sentences,
-        # especially those that are longer than the sentences in the training corpus."
+        # especially those that are longer than the sentences in the training corpus." 
+        # https://arxiv.org/pdf/1409.0473.pdf, Bengio et al. ICLR 2015
+        if not self.attention:
+            hidden_view = hidden.view(self.num_layers, self.num_dir, batch_size, self.hidden_size)  # 2 for bidirectional
+            last_hidden = hidden_view[-1]  # get last layer forward and backward last hidden state
 
-        # hidden_view = hidden.view(self.num_layers, self.num_dir, batch_size, self.hidden_size) # 2 for bidirectional
-        # last_hidden = hidden_view[-1] # get last layer forward and backward last hidden state
-
-        # if (self.utt_encoder.bidirectional):
-        #     last_hidden_fwd = last_hidden[0]
-        #     last_hidden_bwd = last_hidden[1]
-        #     last_hidden = torch.cat((last_hidden_fwd, last_hidden_bwd), dim = 1)
-
-        # To solve the problem just sum over the outputs to get a representation a better representation of the entire sequence
-        # It is possible also to employ an learnable attention mechanism to weight the summation similarly to:
-        # Neural Machine Translation by jointly learning to align and translate, Bengio et. al. ICLR 2015.
-        # https://arxiv.org/pdf/1409.0473.pdf
-        utt_encoded = utt_encoded.sum(dim=0)
-        out = self.fc1(utt_encoded)
+            if (self.utt_encoder.bidirectional):
+                last_hidden_fwd = last_hidden[0]
+                last_hidden_bwd = last_hidden[1]
+                last_hidden = torch.cat((last_hidden_fwd, last_hidden_bwd), dim=1)
+            out = self.fc1(last_hidden)
+        else:
+            # To get a better representation of the sequence it is possible to use a learnable soft attention mechanism
+            # to perform a weighted summation of the encoded words similarly to:
+            # Neural Machine Translation by jointly learning to align and translate, Bengio et. al. ICLR 2015.
+            # https://arxiv.org/pdf/1409.0473.pdf
+            alpha = self.attention_module(utt_encoded)
+            context_vector = utt_encoded * alpha
+            context_vector = context_vector.sum(dim=0)
+            out = self.fc1(context_vector)
         return out
 
 
@@ -81,15 +101,14 @@ class SentimentCNN(nn.Module):
     def __init__(self, vocab_size, config):
         super(SentimentCNN, self).__init__()
         self.emb_size = config["emb_size"]
-        self.hidden_size = config["hidden_size"]
         self.num_filters = config["num_filters"]
         self.filter_sizes = config["filter_sizes"]
         self.dropout_ratio = config["dropout_ratio"]
-
+        self.out_size = config["out_size"]
         self.embedding = nn.Embedding(vocab_size, self.emb_size, padding_idx=PAD_TOKEN, max_norm=5.0)
 
         self.conv1d_list = nn.ModuleList([
-            nn.Conv1d(in_channels=self.emb_dim,
+            nn.Conv1d(in_channels=self.emb_size,
                       out_channels=self.num_filters[i],
                       kernel_size=self.filter_sizes[i])
             for i in range(len(self.filter_sizes))

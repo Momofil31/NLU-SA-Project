@@ -5,12 +5,12 @@ nltk.download("punkt")
 nltk.download("movie_reviews")
 nltk.download("subjectivity")
 
-N_FOLDS = 5
+N_FOLDS = 1
 RANDOM_SEED = 42
 BATCH_SIZE = 256
 PAD_TOKEN = 0
 TRAIN_TEST_SPLIT = 0.2
-EPOCHS = 2
+EPOCHS = 10
 LR = 0.001
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -22,6 +22,7 @@ SentimentGRU_config = {
     "num_layers": 2,
     "dropout_ratio": 0.1,
     "bidirectional": True,
+    "attention": True
 }
 
 SentimentCNN_config = {
@@ -29,4 +30,5 @@ SentimentCNN_config = {
     "out_size": 1,
     "filter_sizes": [3, 5, 7],
     "num_filters": [100, 100, 100],
+    "dropout_ratio": 0.1,
 }
