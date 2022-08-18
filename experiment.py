@@ -161,10 +161,10 @@ class Experiment:
 
         # print average and std for metrics
         metrics_df = pd.DataFrame.from_dict(metrics_list)
-        metrics_df.loc["mean"] = metrics_df.mean()
-        metrics_df.loc["std"] = metrics_df.std()
-        metrics_df.loc["max"] = metrics_df.max()
-        metrics_df.loc["min"] = metrics_df.min()
+        metrics_df.loc["mean"] = metrics_df[:N_FOLDS].mean()
+        metrics_df.loc["std"] = metrics_df[:N_FOLDS].std()
+        metrics_df.loc["max"] = metrics_df[:N_FOLDS].max()
+        metrics_df.loc["min"] = metrics_df[:N_FOLDS].min()
         print(metrics_df)
         metrics_df.to_csv(f"{self.model_name}_stats.csv")
 
@@ -311,13 +311,14 @@ class Experiment:
 
             print('\n Epoch: {:d}'.format(e + 1))
             print('\t Training loss {:.5f}, Training accuracy {:.2f}'.format(train_loss, train_acc))
-            print('\t Test loss {:.5f}, Test accuracy {:.2f}'.format(test_loss, test_acc))
+            print('\t Test loss {:.5f}, Test accuracy {:.2f}, Test F1 {:.2f}'.format(test_loss, test_acc, test_f1))
             print('-----------------------------------------------------')
 
         #visualize(best_model, ts_dl, wandb_run)
+        print('\t BEST Test loss {:.5f}, Test accuracy {:.2f}, Test F1 {:.2f}'.format(best_loss, best_acc, best_f1))
         wandb.summary["test_best_loss"] = best_loss
         wandb.summary["test_best_accuracy"] = best_acc
+        wandb.summary["test_best_f1"] = best_f1
         wandb.finish()
-        print('\t BEST Test loss {:.5f}, Test accuracy {:.2f}'.format(best_loss, best_acc))
         best_metrics = {"loss": best_loss, "acc": best_acc, "f1": best_f1}
         return best_model, best_metrics
