@@ -1,7 +1,7 @@
 import wandb
 import torch
 import copy
-from tqdm import tqdm
+from tqdm.auto import tqdm
 from torch import nn, optim
 from torch.utils.data import DataLoader
 import pandas as pd
