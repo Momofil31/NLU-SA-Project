@@ -34,7 +34,7 @@ class SentimentGRU(nn.Module):
         self.num_dir = 2 if self.bidirectional else 1
 
         if self.attention:
-            self.attention_module = SoftAttention(self.hidden_size*self.num_dir)
+            self.attention_module = SoftAttention(self.hidden_size*self.num_dir, dropout=self.dropout_ratio)
 
         self.embedding = nn.Embedding(vocab_size, self.emb_size, padding_idx=pad_index)
         self.utt_encoder = nn.GRU(self.emb_size, self.hidden_size, self.num_layers, bidirectional=self.bidirectional, dropout=self.dropout_ratio)
