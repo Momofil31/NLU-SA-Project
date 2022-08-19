@@ -5,17 +5,18 @@ from settings import PAD_TOKEN
 
 
 class SoftAttention(nn.Module):
-    def __init__(self, dim, dropout=0.1):
+    def __init__(self, dim, hidden_dim, dropout_ratio=0.1):
         super(SoftAttention, self).__init__()
         self.attention = nn.Sequential(
-            nn.Dropout(dropout),
-            nn.Linear(dim, 1),
+            nn.Linear(dim, hidden_dim),
+            nn.Dropout(dropout_ratio),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, 1),
             nn.Softmax(dim=0)
         )
 
     def forward(self, context_vector):
         return self.attention(context_vector)
-
 
 class SentimentGRU(nn.Module):
     '''
@@ -34,13 +35,15 @@ class SentimentGRU(nn.Module):
         self.num_dir = 2 if self.bidirectional else 1
 
         if self.attention:
-            self.attention_module = SoftAttention(self.hidden_size*self.num_dir, dropout=self.dropout_ratio)
+            self.att_hidden_size = config["att_hidden_size"]
+            self.attention_module = SoftAttention(self.hidden_size*self.num_dir, self.att_hidden_size, dropout_ratio=self.dropout_ratio)
 
         self.embedding = nn.Embedding(vocab_size, self.emb_size, padding_idx=pad_index)
         self.utt_encoder = nn.GRU(self.emb_size, self.hidden_size, self.num_layers, bidirectional=self.bidirectional, dropout=self.dropout_ratio)
         self.fc1 = nn.Linear(self.hidden_size*self.num_dir, self.out_size)
 
-    def forward(self, utterance, seq_lengths):
+    def forward(self, inputs):
+        utterance, seq_lengths = inputs
         # utterance.size() = batch_size X seq_len
         batch_size = utterance.shape[0]
         utt_emb = self.embedding(utterance)  # utt_emb.size() = batch_size X seq_len X emb_size
@@ -116,7 +119,8 @@ class SentimentCNN(nn.Module):
         self.fc = nn.Linear(sum(self.num_filters), self.out_size)
         self.dropout = nn.Dropout(self.dropout_ratio)
 
-    def forward(self, x, _):
+    def forward(self, inputs):
+        x, _ = inputs
         x_emb = self.embedding(x).float()
         x_reshaped = x_emb.permute(0, 2, 1)
         x_conv_list = [torch.relu(conv1d(x_reshaped)) for conv1d in self.conv1d_list]

@@ -7,9 +7,11 @@ from torch.utils.data import DataLoader
 import pandas as pd
 
 from models.models import SentimentGRU, SentimentCNN
+from transformer.data_processing import BertDataset
+from transformer.models import BertClassifier
 from utils import init_weights
-from settings import N_FOLDS, EPOCHS, BATCH_SIZE, LR, RANDOM_SEED, TRAIN_TEST_SPLIT, SentimentGRU_config, SentimentCNN_config, DEVICE
-from data_processing import Lang, CustomDataset, collate_fn
+from settings import *
+from data_processing import Lang, CustomDataset
 
 from nltk.corpus import movie_reviews, subjectivity
 from sklearn.model_selection import train_test_split
@@ -42,14 +44,15 @@ class Experiment:
             negative_fileids = movie_reviews.fileids('neg')
             positive_fileids = movie_reviews.fileids('pos')
 
-            mr_neg = [{"document": movie_reviews.words(fileids=fileid), "label": 0} for fileid in negative_fileids]
+            mr_neg = [{"document": list(movie_reviews.words(fileids=fileid)), "label": 0} for fileid in negative_fileids]
             mr_Y_neg = [0]*len(mr_neg)
 
-            mr_pos = [{"document": movie_reviews.words(fileids=fileid), "label": 1} for fileid in positive_fileids]
+            mr_pos = [{"document": list(movie_reviews.words(fileids=fileid)), "label": 1} for fileid in positive_fileids]
             mr_Y_pos = [1]*len(mr_pos)
 
             self.data_raw = mr_neg+mr_pos
             self.data_Y = mr_Y_neg + mr_Y_pos
+            print(self.data_raw[:2])
             print("Total samples: ", len(self.data_raw))
 
         elif self.task == "subjectivity":
@@ -59,20 +62,18 @@ class Experiment:
             obj_sents = subjectivity.sents(fileids=obj_fileid)
             subj_sents = subjectivity.sents(fileids=subj_fileid)
 
-            print(obj_sents[0])
-            print(subj_sents[0])
-
             self.data_raw = [{"document": sent, "label": 0} for sent in obj_sents]
             self.data_Y = [0]*len(obj_sents)
 
             self.data_raw += [{"document": sent, "label": 1} for sent in subj_sents]
             self.data_Y += [1]*len(subj_sents)
+            print(self.data_raw[:2])
             print("Total samples: ", len(self.data_raw))
 
         elif (self.task == "polarity-no-obj-sents"
-            and self.sjv_classifier is not None
-            and self.sjv_vectorizer is not None
-            ):
+              and self.sjv_classifier is not None
+              and self.sjv_vectorizer is not None
+              ):
             def removeObjectiveSents(docs_sents, mask):
                 i = 0
                 clean_docs = []
@@ -85,8 +86,10 @@ class Experiment:
                 return clean_docs
 
             # get docs divided in sentences
-            neg_docs_sents = [movie_reviews.sents(fileids=negative_fileids[id]) for id in range(len(negative_fileids))]
-            pos_docs_sents = [movie_reviews.sents(fileids=positive_fileids[id]) for id in range(len(positive_fileids))]
+            negative_fileids = movie_reviews.fileids('neg')
+            positive_fileids = movie_reviews.fileids('pos')
+            neg_docs_sents = [movie_reviews.sents(fileids=fileid) for fileid in negative_fileids]
+            pos_docs_sents = [movie_reviews.sents(fileids=fileid) for fileid in negative_fileids]
             mr_docs_sents = neg_docs_sents + pos_docs_sents
             mr_sents = [" ".join(sent) for doc in mr_docs_sents for sent in doc]
 
@@ -107,6 +110,7 @@ class Experiment:
 
         else:
             print("Cannot prepare data. Wrong parameters.")
+            exit()
 
     def create_fold(self):
         train, test, _, _ = train_test_split(self.data_raw, self.data_Y, test_size=TRAIN_TEST_SPLIT,
@@ -119,8 +123,8 @@ class Experiment:
         train_dataset = CustomDataset(train, self.lang)
         test_dataset = CustomDataset(test, self.lang)
 
-        self.train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, collate_fn=collate_fn,  shuffle=True)
-        self.test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, collate_fn=collate_fn, drop_last=True)
+        self.train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, collate_fn=train_dataset.collate_fn,  shuffle=True)
+        self.test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, collate_fn=test_dataset.collate_fn, drop_last=True)
 
     def run(self):
         self.prepare_data()
@@ -128,12 +132,15 @@ class Experiment:
         metrics_list = []
         for i_fold in range(N_FOLDS):
             self.create_fold()
-            vocab_size = len(self.lang.word2id)
 
             if self.model_name == "SentimentGRU":
+                vocab_size = len(self.lang.word2id)
                 model = SentimentGRU(vocab_size, self.model_config)
             elif self.model_name == "SentimentCNN":
+                vocab_size = len(self.lang.word2id)
                 model = SentimentCNN(vocab_size, self.model_config)
+            elif self.model_name == "BertBase":
+                model = BertClassifier(BertBase_config)
             else:
                 print("Model name does not exist")
                 return
@@ -142,7 +149,8 @@ class Experiment:
             run = wandb.init(
                 project="NLU_SA",
                 entity="filippomomesso",
-                name=f"{self.model_name}_{i_fold:02d}",
+                group=f"{self.model_name}",
+                name=f"fold_{i_fold:02d}",
                 config={
                     "model": self.model_name,
                     "epochs": EPOCHS,
@@ -152,6 +160,7 @@ class Experiment:
                     "optimizer": "Adam"
                 }
             )
+            wandb.watch(model, "gradients", log_freq=5)
             self.optimizer = optim.Adam(model.parameters(), lr=run.config['lr'])
             self.cost_fn = torch.nn.BCEWithLogitsLoss()  # Because we do not have the pad token
 
@@ -171,7 +180,6 @@ class Experiment:
         best_model_overall_idx = metrics_df["acc"].idxmax()
         return models[best_model_overall_idx]
 
-
     def training_step(self, model, data_loader, optimizer, cost_function, clip=5, epoch=0):
         n_samples = 0
         cumulative_loss = 0.
@@ -180,18 +188,17 @@ class Experiment:
         model.train()
 
         for batch_idx, (inputs, targets) in enumerate(tqdm(data_loader, desc="Training Step", leave=False)):
-            seqs, text_lens = inputs
-
-            outputs = model(seqs, text_lens)
+            outputs = model(inputs)
 
             loss = cost_function(outputs, targets.unsqueeze(-1).float())
             loss.backward()
-            nn.utils.clip_grad_norm_(model.parameters(), clip)
+            if clip != 0:
+                nn.utils.clip_grad_norm_(model.parameters(), clip)
             optimizer.step()
             optimizer.zero_grad()
 
             # add batch size
-            n_samples += seqs.shape[0]
+            n_samples += outputs.shape[0]
             # cumulative loss
             cumulative_loss += loss.item()
 
@@ -222,12 +229,11 @@ class Experiment:
         y_pred = []
         with torch.no_grad():
             for batch_idx, (inputs, targets) in enumerate(tqdm(data_loader, desc="Test Step", leave=False)):
-                seqs, text_lens = inputs
-                outputs = model(seqs, text_lens)
+                outputs = model(inputs)
                 loss = cost_function(outputs, targets.unsqueeze(-1).float())
 
                 # add batch size
-                n_samples += seqs.shape[0]
+                n_samples += outputs.shape[0]
                 # cumulative loss
                 cumulative_loss += loss.item()
                 # return predicted labels
@@ -304,9 +310,9 @@ class Experiment:
                 best_model = copy.deepcopy(model)
                 # Save new best weights
                 if save:
-                    self.save_weights(e, model, optimizer, test_loss, f'/content/drive/MyDrive/weights/ResNet18CAN_{experiment}.pth')
+                    self.save_weights(e, model, optimizer, test_loss, f"./weights/{wandb_run.group}_{wandb_run.name}")
                     artifact = wandb.Artifact(f'ResNet18CAN_{experiment}', type='model', metadata={**wandb_run.config, **metrics})
-                    artifact.add_file(f'/content/drive/MyDrive/weights/ResNet18CAN_{experiment}.pth')
+                    artifact.add_file(f"./weights/{wandb_run.group}_{wandb_run.name}")
                     wandb_run.log_artifact(artifact)
 
             print('\n Epoch: {:d}'.format(e + 1))
@@ -322,3 +328,22 @@ class Experiment:
         wandb.finish()
         best_metrics = {"loss": best_loss, "acc": best_acc, "f1": best_f1}
         return best_model, best_metrics
+
+
+class BertExperiment(Experiment):
+    def __init__(self, model_name, task="polarity", sjv_classifier=None, sjv_vectorizer=None):
+        super(BertExperiment, self).__init__(model_name, task, sjv_classifier, sjv_vectorizer)
+        if model_name == "BertBase":
+            self.model_config = BertBase_config
+
+    def create_fold(self):
+        train, test, _, _ = train_test_split(self.data_raw, self.data_Y, test_size=TRAIN_TEST_SPLIT,
+                                             random_state=RANDOM_SEED,
+                                             shuffle=True,
+                                             stratify=self.data_Y)
+
+        train_dataset = BertDataset(train)
+        test_dataset = BertDataset(test)
+
+        self.train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, collate_fn=train_dataset.collate_fn, shuffle=True)
+        self.test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, collate_fn=test_dataset.collate_fn)

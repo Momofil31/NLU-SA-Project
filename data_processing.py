@@ -55,34 +55,34 @@ class CustomDataset (Dataset):
         return res
 
 
-def collate_fn(data):
-    def merge(sequences):
-        '''
-        merge from batch * sent_len to batch * max_len 
-        '''
-        lengths = [len(seq) for seq in sequences]
-        max_len = 1 if max(lengths) == 0 else max(lengths)
-        # Pad token is zero in our case
-        # So we create a matrix full of PAD_TOKEN (i.e. 0) with the shape
-        # batch_size X maximum length of a sequence
-        padded_seqs = torch.LongTensor(len(sequences), max_len).fill_(PAD_TOKEN)
-        for i, seq in enumerate(sequences):
-            end = lengths[i]
-            padded_seqs[i, :end] = seq  # We copy each sequence into the matrix
-        # print(padded_seqs)
-        padded_seqs = padded_seqs.detach()  # We remove these tensors from the computational graph
-        return padded_seqs, lengths
-    # Sort data by seq lengths
-    data.sort(key=lambda x: len(x['document']), reverse=True)
-    new_item = {}
-    for key in data[0].keys():
-        new_item[key] = [d[key] for d in data]
-    # We just need one length for packed pad seq, since len(utt) == len(slots)
-    src_docs, lenghts = merge(new_item['document'])
-    label = torch.LongTensor(new_item["label"])
-    text_lens = torch.LongTensor(lenghts)
-    src_docs = src_docs.to(DEVICE)  # We load the Tensor on our seleceted device
-    label = label.to(DEVICE)
-    text_lens.to(DEVICE)
+    def collate_fn(self, data):
+        def merge(sequences):
+            '''
+            merge from batch * sent_len to batch * max_len 
+            '''
+            lengths = [len(seq) for seq in sequences]
+            max_len = 1 if max(lengths) == 0 else max(lengths)
+            # Pad token is zero in our case
+            # So we create a matrix full of PAD_TOKEN (i.e. 0) with the shape
+            # batch_size X maximum length of a sequence
+            padded_seqs = torch.LongTensor(len(sequences), max_len).fill_(PAD_TOKEN)
+            for i, seq in enumerate(sequences):
+                end = lengths[i]
+                padded_seqs[i, :end] = seq  # We copy each sequence into the matrix
+            # print(padded_seqs)
+            padded_seqs = padded_seqs.detach()  # We remove these tensors from the computational graph
+            return padded_seqs, lengths
+        # Sort data by seq lengths
+        data.sort(key=lambda x: len(x['document']), reverse=True)
+        new_item = {}
+        for key in data[0].keys():
+            new_item[key] = [d[key] for d in data]
+        # We just need one length for packed pad seq, since len(utt) == len(slots)
+        src_docs, lenghts = merge(new_item['document'])
+        label = torch.LongTensor(new_item["label"])
+        text_lens = torch.LongTensor(lenghts)
+        src_docs = src_docs.to(DEVICE)  # We load the Tensor on our seleceted device
+        label = label.to(DEVICE)
+        text_lens.to(DEVICE)
 
-    return ((src_docs, text_lens), label)
+        return ((src_docs, text_lens), label)

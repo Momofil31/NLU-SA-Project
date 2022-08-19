@@ -9,4 +9,6 @@ nltk
 spacy
 scikit-learn
 wandb
+transformers
+
 
