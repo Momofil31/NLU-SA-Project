@@ -52,7 +52,6 @@ class Experiment:
 
             self.data_raw = mr_neg+mr_pos
             self.data_Y = mr_Y_neg + mr_Y_pos
-            print(self.data_raw[:2])
             print("Total samples: ", len(self.data_raw))
 
         elif self.task == "subjectivity":
@@ -67,7 +66,6 @@ class Experiment:
 
             self.data_raw += [{"document": sent, "label": 1} for sent in subj_sents]
             self.data_Y += [1]*len(subj_sents)
-            print(self.data_raw[:2])
             print("Total samples: ", len(self.data_raw))
 
         elif (self.task == "polarity-no-obj-sents"
