@@ -12,7 +12,7 @@ class TransformerDataset(Dataset):
         self.tokenizer = AutoTokenizer.from_pretrained(PRETRAINED_MODEL_NAME)
         self.documents = []
         self.labels = []
-        for x in dataset:
+        for x in dataset[:10]:
             self.documents.append(x['document'])
             self.labels.append(x['label'])
 

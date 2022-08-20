@@ -43,7 +43,7 @@ class SentimentGRU(nn.Module):
         self.fc1 = nn.Linear(self.hidden_size*self.num_dir, self.out_size)
 
     def forward(self, inputs):
-        utterance, seq_lengths = inputs
+        utterance, seq_lengths = inputs.values()
         # utterance.size() = batch_size X seq_len
         batch_size = utterance.shape[0]
         utt_emb = self.embedding(utterance)  # utt_emb.size() = batch_size X seq_len X emb_size
@@ -120,7 +120,7 @@ class SentimentCNN(nn.Module):
         self.dropout = nn.Dropout(self.dropout_ratio)
 
     def forward(self, inputs):
-        x, _ = inputs
+        x, _ = inputs.values()
         x_emb = self.embedding(x).float()
         x_reshaped = x_emb.permute(0, 2, 1)
         x_conv_list = [torch.relu(conv1d(x_reshaped)) for conv1d in self.conv1d_list]

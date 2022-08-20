@@ -1,5 +1,7 @@
 import torch
 import nltk
+import os
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 # nltk.download("punkt")
 # nltk.download("movie_reviews")
@@ -8,10 +10,10 @@ import nltk
 N_FOLDS = 1
 N_FOLDS_BASELINE = 5
 RANDOM_SEED = 42
-BATCH_SIZE = 2
+BATCH_SIZE = 512
 PAD_TOKEN = 0
 TRAIN_TEST_SPLIT = 0.2
-EPOCHS = 1
+EPOCHS = 10
 LR = 0.001
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 SEQUENCE_MAX_LENGTH= 10

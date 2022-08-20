@@ -138,7 +138,7 @@ class Experiment:
                 vocab_size = len(self.lang.word2id)
                 model = SentimentCNN(vocab_size, self.model_config)
             elif self.model_name == "Transformer":
-                model = TransformerClassifier(Transformer_config)
+                model = TransformerClassifier(self.model_config)
             else:
                 print("Model name does not exist")
                 return
@@ -158,7 +158,7 @@ class Experiment:
                     "optimizer": "Adam"
                 }
             )
-            wandb.watch(model, "gradients", log_freq=5)
+            #wandb.watch(model, "gradients", log_freq=5)
             self.optimizer = optim.Adam(model.parameters(), lr=run.config['lr'])
             self.cost_fn = torch.nn.BCEWithLogitsLoss()  # Because we do not have the pad token
 
@@ -186,6 +186,9 @@ class Experiment:
         model.train()
 
         for batch_idx, (inputs, targets) in enumerate(tqdm(data_loader, desc="Training Step", leave=False)):
+            for k in inputs.keys():
+                inputs[k] = inputs[k].to(DEVICE) 
+            targets = targets.to(DEVICE)
             outputs = model(inputs)
 
             loss = cost_function(outputs, targets.unsqueeze(-1).float())

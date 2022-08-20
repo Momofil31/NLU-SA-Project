@@ -54,7 +54,6 @@ class CustomDataset (Dataset):
             res.append(tmp_doc)
         return res
 
-
     def collate_fn(self, data):
         def merge(sequences):
             '''
@@ -81,8 +80,4 @@ class CustomDataset (Dataset):
         src_docs, lenghts = merge(new_item['document'])
         label = torch.LongTensor(new_item["label"])
         text_lens = torch.LongTensor(lenghts)
-        src_docs = src_docs.to(DEVICE)  # We load the Tensor on our seleceted device
-        label = label.to(DEVICE)
-        text_lens.to(DEVICE)
-
-        return ((src_docs, text_lens), label)
+        return ({"document": src_docs, "text_lens": text_lens}, label)
