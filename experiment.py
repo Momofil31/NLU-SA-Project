@@ -230,6 +230,9 @@ class Experiment:
         y_pred = []
         with torch.no_grad():
             for batch_idx, (inputs, targets) in enumerate(tqdm(data_loader, desc="Test Step", leave=False)):
+                for k in inputs.keys():
+                    inputs[k] = inputs[k].to(DEVICE) 
+                    targets = targets.to(DEVICE)
                 outputs = model(inputs)
                 loss = cost_function(outputs, targets.unsqueeze(-1).float())
 
