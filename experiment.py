@@ -7,8 +7,8 @@ from torch.utils.data import DataLoader
 import pandas as pd
 
 from models.models import SentimentGRU, SentimentCNN
-from transformer.data_processing import BertDataset
-from transformer.models import BertClassifier
+from transformer.data_processing import TransformerDataset
+from transformer.models import TransformerClassifier
 from utils import init_weights
 from settings import *
 from data_processing import Lang, CustomDataset
@@ -137,8 +137,8 @@ class Experiment:
             elif self.model_name == "SentimentCNN":
                 vocab_size = len(self.lang.word2id)
                 model = SentimentCNN(vocab_size, self.model_config)
-            elif self.model_name == "BertBase":
-                model = BertClassifier(BertBase_config)
+            elif self.model_name == "Transformer":
+                model = TransformerClassifier(Transformer_config)
             else:
                 print("Model name does not exist")
                 return
@@ -178,7 +178,7 @@ class Experiment:
         best_model_overall_idx = metrics_df["acc"].idxmax()
         return models[best_model_overall_idx]
 
-    def training_step(self, model, data_loader, optimizer, cost_function, clip=5, epoch=0):
+    def training_step(self, model, data_loader, optimizer, cost_function, clip=CLIP_GRADIENTS, epoch=0):
         n_samples = 0
         cumulative_loss = 0.
         cumulative_accuracy = 0.
@@ -328,11 +328,11 @@ class Experiment:
         return best_model, best_metrics
 
 
-class BertExperiment(Experiment):
+class TransformerExperiment(Experiment):
     def __init__(self, model_name, task="polarity", sjv_classifier=None, sjv_vectorizer=None):
-        super(BertExperiment, self).__init__(model_name, task, sjv_classifier, sjv_vectorizer)
-        if model_name == "BertBase":
-            self.model_config = BertBase_config
+        super(TransformerExperiment, self).__init__(model_name, task, sjv_classifier, sjv_vectorizer)
+        if model_name == "Transformer":
+            self.model_config = Transformer_config
 
     def create_fold(self):
         train, test, _, _ = train_test_split(self.data_raw, self.data_Y, test_size=TRAIN_TEST_SPLIT,
@@ -340,8 +340,8 @@ class BertExperiment(Experiment):
                                              shuffle=True,
                                              stratify=self.data_Y)
 
-        train_dataset = BertDataset(train)
-        test_dataset = BertDataset(test)
+        train_dataset = TransformerDataset(train)
+        test_dataset = TransformerDataset(test)
 
-        self.train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, collate_fn=train_dataset.collate_fn, shuffle=True)
-        self.test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, collate_fn=test_dataset.collate_fn)
+        self.train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
+        self.test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE)

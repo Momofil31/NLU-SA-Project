@@ -14,7 +14,9 @@ TRAIN_TEST_SPLIT = 0.2
 EPOCHS = 1
 LR = 0.001
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-BERT_SEQUENCE_MAX_LENGTH= 512
+SEQUENCE_MAX_LENGTH= 10
+PRETRAINED_MODEL_NAME = "distilbert-base-uncased"
+CLIP_GRADIENTS = 5
 
 # models config
 SentimentGRU_config = {
@@ -36,7 +38,6 @@ SentimentCNN_config = {
     "dropout_ratio": 0.5,
 }
 
-BertBase_config = {
+Transformer_config = {
     "out_size": 1,
-    "dropout_ratio": 0.5,
 }
