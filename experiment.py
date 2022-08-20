@@ -5,6 +5,7 @@ from tqdm.auto import tqdm
 from torch import nn, optim
 from torch.utils.data import DataLoader
 import pandas as pd
+from baseline import BaselineExperiment
 
 from models.models import SentimentGRU, SentimentCNN
 from transformer.data_processing import TransformerDataset
@@ -341,13 +342,16 @@ class TransformerExperiment(Experiment):
             self.model_config = Transformer_config
 
     def create_fold(self):
-        train, test, _, _ = train_test_split(self.data_raw, self.data_Y, test_size=TRAIN_TEST_SPLIT,
+        train, test, train_y, test_y = train_test_split(self.data_raw, self.data_Y, test_size=TRAIN_TEST_SPLIT,
                                              random_state=RANDOM_SEED,
                                              shuffle=True,
                                              stratify=self.data_Y)
 
-        train_dataset = TransformerDataset(train)
-        test_dataset = TransformerDataset(test)
+        train_dataset = TransformerDataset(train, train_y)
+        test_dataset = TransformerDataset(test, test_y)
 
         self.train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
         self.test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE)
+
+    def prepare_data(self):
+        BaselineExperiment.prepare_data(self)

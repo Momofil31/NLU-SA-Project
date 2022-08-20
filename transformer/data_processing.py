@@ -8,20 +8,20 @@ from settings import SEQUENCE_MAX_LENGTH, DEVICE, PRETRAINED_MODEL_NAME
 
 class TransformerDataset(Dataset):
 
-    def __init__(self, dataset):
+    def __init__(self, documents, labels):
         self.tokenizer = AutoTokenizer.from_pretrained(PRETRAINED_MODEL_NAME)
-        self.documents = []
-        self.labels = []
-        for x in dataset[:10]:
-            self.documents.append(x['document'])
-            self.labels.append(x['label'])
+        self.documents = documents
+        self.labels = labels
+        # for x in dataset[:10]:
+        #     self.documents.append(x['document'])
+        #     self.labels.append(x['label'])
 
         self.docs_tensor = self.tokenizer(self.documents,
                                           padding='max_length', max_length=SEQUENCE_MAX_LENGTH, truncation=True,
-                                          return_tensors="pt", is_split_into_words=True)
+                                          return_tensors="pt")
 
     def __len__(self):
-        return len(self.labels)
+        return len(self.documents)
 
     def __getitem__(self, idx):
         label = torch.tensor(self.labels[idx])
