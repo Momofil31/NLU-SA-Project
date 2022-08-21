@@ -18,8 +18,9 @@ from sklearn.metrics import f1_score
 
 
 class Experiment:
-    def __init__(self, model_name, task="polarity", sjv_classifier=None, sjv_vectorizer=None):
-        self.model_name = model_name
+    def __init__(self, task="polarity", sjv_classifier=None, sjv_vectorizer=None):
+        self.model_config = None
+        self.ModelType = None
         self.train_loader = None
         self.test_loader = None
         self.optimizer = None
@@ -31,13 +32,6 @@ class Experiment:
         self.lang = None
         self.sjv_classifier = sjv_classifier
         self.sjv_vectorizer = sjv_vectorizer
-
-        if model_name == "BiGRU":
-            self.model_config = BiGRU_config
-        if model_name == "BiGRUAttention":
-            self.model_config = BiGRUAttention_config
-        if model_name == "TextCNN":
-            self.model_config = TextCNN_config
 
     def prepare_data(self):
         if self.task == "polarity":
@@ -85,7 +79,7 @@ class Experiment:
             # shallow subjectivity classifier is used to allow comparisons
             movie_sjv_vectors = self.sjv_vectorizer.transform(mr_sents)
             pred = self.sjv_classifier.predict(movie_sjv_vectors)
-            clean_mr = Experiment.removeObjectiveSents(mr_docs_sents, pred)
+            clean_mr = removeObjectiveSents(mr_docs_sents, pred, tokenized=True)
 
             mr_neg = [{"document": doc, "label": 0} for doc in clean_mr[:1000]]
             mr_Y_neg = [0]*len(mr_neg)
@@ -100,21 +94,6 @@ class Experiment:
         else:
             print("Cannot prepare data. Wrong parameters.")
             exit()
-
-    @staticmethod
-    def removeObjectiveSents(docs_sents, mask):
-        i = 0
-        remaining_sents = 0
-        clean_docs = []
-        for doc in docs_sents:
-            clean_docs.append([])
-            for sent in doc:
-                if mask[i] == 1:
-                    clean_docs[-1] += sent
-                    remaining_sents += 1
-                i += 1
-        print(f"Remaining {remaining_sents} sentences from original {i} sentences count.")
-        return clean_docs
 
     def create_fold(self):
         train, test, _, _ = train_test_split(self.data_raw, self.data_Y, test_size=TRAIN_TEST_SPLIT,
@@ -136,21 +115,11 @@ class Experiment:
         metrics_list = []
         for fold_idx in range(N_FOLDS):
             self.create_fold()
-
-            if self.model_name == "BiGRU":
+            if self.lang:
                 vocab_size = len(self.lang.word2id)
-                model = BiGRU(vocab_size, self.model_config)
-            if self.model_name == "BiGRUAttention":
-                vocab_size = len(self.lang.word2id)
-                model = BiGRU(vocab_size, self.model_config)
-            elif self.model_name == "TextCNN":
-                vocab_size = len(self.lang.word2id)
-                model = TextCNN(vocab_size, self.model_config)
-            elif self.model_name == "Transformer":
-                model = TransformerClassifier(self.model_config)
+                model = self.ModelType(vocab_size, self.model_config)
             else:
-                print("Model name does not exist")
-                return
+                model = self.ModelType(self.model_config)
 
             print(model)
             model.to(DEVICE)
@@ -158,8 +127,8 @@ class Experiment:
             run = wandb.init(
                 project="NLU_SA",
                 entity="filippomomesso",
-                group=f"{self.model_name}",
-                name=f"{self.task}_{self.model_name}_fold_{fold_idx:02d}",
+                group=f"{self.model_config['model_name']}",
+                name=f"{self.task}_{self.model_config['model_name']}_fold_{fold_idx:02d}",
                 config={
                     "task": self.task,
                     **self.model_config,
@@ -180,7 +149,7 @@ class Experiment:
         metrics_df.loc["mean"] = metrics_df[:N_FOLDS].mean()
         metrics_df.loc["std"] = metrics_df[:N_FOLDS].std()
         print(metrics_df)
-        metrics_df.to_csv(f"{STATS_SAVE_PATH}/{self.model_name}_{self.task}.csv")
+        metrics_df.to_csv(f"{STATS_SAVE_PATH}/{self.model_config['model_name']}_{self.task}.csv")
 
         best_model_overall_idx = metrics_df["acc"].idxmax()
         return models[best_model_overall_idx]
@@ -345,10 +314,10 @@ class Experiment:
 
 
 class TransformerExperiment(Experiment):
-    def __init__(self, model_name, task="polarity", sjv_classifier=None, sjv_vectorizer=None):
-        super(TransformerExperiment, self).__init__(model_name, task, sjv_classifier, sjv_vectorizer)
-        if model_name == "Transformer":
-            self.model_config = Transformer_config
+    def __init__(self, task="polarity", sjv_classifier=None, sjv_vectorizer=None):
+        super().__init__(task, sjv_classifier, sjv_vectorizer)
+        self.model_config = Transformer_config
+        self.ModelType = TransformerClassifier
 
     def create_fold(self):
         train, test, train_y, test_y = train_test_split(self.data_raw, self.data_Y, test_size=TRAIN_TEST_SPLIT,
@@ -363,3 +332,24 @@ class TransformerExperiment(Experiment):
 
     def prepare_data(self):
         BaselineExperiment.prepare_data(self)
+
+
+class BiGRUExperiment(Experiment):
+    def __init__(self, task="polarity", sjv_classifier=None, sjv_vectorizer=None):
+        super().__init__(task, sjv_classifier, sjv_vectorizer)
+        self.model_config = BiGRU_config
+        self.ModelType = BiGRU
+
+
+class BiGRUAttentionExperiment(Experiment):
+    def __init__(self, task="polarity", sjv_classifier=None, sjv_vectorizer=None):
+        super().__init__(task, sjv_classifier, sjv_vectorizer)
+        self.model_config = BiGRUAttention_config
+        self.ModelType = BiGRU
+
+
+class TextCNNExperiment(Experiment):
+    def __init__(self, task="polarity", sjv_classifier=None, sjv_vectorizer=None):
+        super().__init__(task, sjv_classifier, sjv_vectorizer)
+        self.model_config = TextCNN_config
+        self.ModelType = TextCNN

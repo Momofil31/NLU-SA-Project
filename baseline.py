@@ -13,6 +13,8 @@ import numpy as np
 import pandas as pd
 import itertools
 
+from utils import removeObjectiveSents
+
 
 class BaselineExperiment:
 
@@ -22,22 +24,6 @@ class BaselineExperiment:
         self.data_Y = None
         self.sjv_classifier = sjv_classifier
         self.sjv_vectorizer = sjv_vectorizer
-
-    @staticmethod
-    def removeObjectiveSents(docs_sents, mask):
-        i = 0
-        remaining_sents = 0
-        clean_docs = []
-        for doc in docs_sents:
-            clean_docs.append([])
-            for sent in doc:
-                if mask[i] == 1:
-                    clean_docs[-1] += sent
-                    remaining_sents += 1
-                i += 1
-        clean_docs = [" ".join(sents) for sents in clean_docs]
-        print(f"Remaining {remaining_sents} sentences from original {i} sentences count.")
-        return clean_docs
 
     def prepare_data(self):
         print("Loading data")
@@ -74,7 +60,7 @@ class BaselineExperiment:
             mr_sjv_vectors = self.sjv_vectorizer.transform(mr_sents)
             pred = self.sjv_classifier.predict(mr_sjv_vectors)
 
-            self.data_raw = BaselineExperiment.removeObjectiveSents(mr_corpus, pred)
+            self.data_raw = removeObjectiveSents(mr_corpus, pred)
             self.data_Y = [0] * len(negative_fileids) + [1] * len(positive_fileids)
         else:
             print("Cannot prepare data. Wrong parameters.")

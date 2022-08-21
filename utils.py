@@ -20,3 +20,19 @@ def init_weights(mat):
                 nn.init.uniform_(m.weight, -0.01, 0.01)
                 if m.bias != None:
                     m.bias.data.fill_(0.01)
+
+def removeObjectiveSents(docs_sents, mask, tokenized=False):
+        i = 0
+        remaining_sents = 0
+        clean_docs = []
+        for doc in docs_sents:
+            clean_docs.append([])
+            for sent in doc:
+                if mask[i] == 1:
+                    clean_docs[-1] += sent
+                    remaining_sents += 1
+                i += 1
+        print(f"Remaining {remaining_sents} sentences from original {i} sentences count.")
+        if not tokenized:
+            clean_docs = [" ".join(sents) for sents in clean_docs]
+        return clean_docs

@@ -1,40 +1,40 @@
-from experiment import Experiment, TransformerExperiment
+from experiment import *
 from baseline import BaselineExperiment
 
 if __name__ == "__main__":
-    filter = False
-    # if filter:
-    #     # Run subjectivity
-    #     exp_subjectivity = BaselineExperiment(task="subjectivity")
-    #     sjv_classifier, sjv_vectorizer = exp_subjectivity.run()  
-    #     exp = TransformerExperiment("Transformer", "polarity-filter", sjv_classifier, sjv_vectorizer)
-    # else:
-    #     exp = TransformerExperiment("Transformer", "subjectivity")
-    # best_model = exp.run()
-
-    # if filter:
-    #     # Run subjectivity
-    #     exp_subjectivity = BaselineExperiment(task="subjectivity")
-    #     sjv_classifier, sjv_vectorizer = exp_subjectivity.run()  
-    #     exp = Experiment("BiGRU", "polarity-filter", sjv_classifier, sjv_vectorizer)
-    # else:
-    #     exp = Experiment("BiGRU", "polarity")
-    # best_model = exp.run()
-
-    # if filter:
-    #     # Run subjectivity
-    #     exp_subjectivity = BaselineExperiment(task="subjectivity")
-    #     sjv_classifier, sjv_vectorizer = exp_subjectivity.run()  
-    #     exp = Experiment("BiGRUAttention", "polarity-filter", sjv_classifier, sjv_vectorizer)
-    # else:
-    #     exp = Experiment("BiGRUAttention", "subjectivity")
-    # best_model = exp.run()
-
+    filter = True
     if filter:
         # Run subjectivity
         exp_subjectivity = BaselineExperiment(task="subjectivity")
         sjv_classifier, sjv_vectorizer = exp_subjectivity.run()  
-        exp = Experiment("TextCNN", "polarity-filter", sjv_classifier, sjv_vectorizer)
+        exp = TransformerExperiment("polarity-filter", sjv_classifier, sjv_vectorizer)
     else:
-        exp = Experiment("TextCNN", "subjectivity")
+        exp = TransformerExperiment("subjectivity")
     best_model = exp.run()
+
+    # if filter:
+    #     # Run subjectivity
+    #     exp_subjectivity = BaselineExperiment(task="subjectivity")
+    #     sjv_classifier, sjv_vectorizer = exp_subjectivity.run()  
+    #     exp = BiGRUExperiment("polarity-filter", sjv_classifier, sjv_vectorizer)
+    # else:
+    #     exp = BiGRUExperiment("polarity")
+    # best_model = exp.run()
+
+    # if filter:
+    #     # Run subjectivity
+    #     exp_subjectivity = BaselineExperiment(task="subjectivity")
+    #     sjv_classifier, sjv_vectorizer = exp_subjectivity.run()  
+    #     exp = BiGRUAttentionExperiment("polarity-filter", sjv_classifier, sjv_vectorizer)
+    # else:
+    #     exp = BiGRUAttentionExperiment("subjectivity")
+    # best_model = exp.run()
+
+    # if filter:
+    #     # Run subjectivity
+    #     exp_subjectivity = BaselineExperiment(task="subjectivity")
+    #     sjv_classifier, sjv_vectorizer = exp_subjectivity.run()  
+    #     exp = TextCNNExperiment("polarity-filter", sjv_classifier, sjv_vectorizer)
+    # else:
+    #     exp = TextCNNExperiment("subjectivity")
+    # best_model = exp.run()

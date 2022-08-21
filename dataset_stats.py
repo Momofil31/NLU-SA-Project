@@ -9,6 +9,9 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import string
 
+from utils import removeObjectiveSents
+
+
 def compute_stats(data, name):
     stats = {}
     seq_lens = [len(sents) for sents in data]
@@ -27,7 +30,7 @@ def compute_stats(data, name):
     stats["lexicon_size"] = len(lexicon)
     stats["lexicon_size_no_stopwords"] = len(lexicon_filtered)
     return stats
-    
+
 
 if __name__ == "__main__":
     stats = {}
@@ -42,7 +45,7 @@ if __name__ == "__main__":
     mr_neg_sents = [movie_reviews.sents(fileids=fileid) for fileid in negative_fileids]
     mr_pos_sents = [movie_reviews.sents(fileids=fileid) for fileid in positive_fileids]
 
-    mr_sents =  mr_neg_sents + mr_pos_sents
+    mr_sents = mr_neg_sents + mr_pos_sents
     mr_words = mr_neg_words + mr_pos_words
 
     stats["MR"] = compute_stats(mr_words, "MR")
@@ -52,13 +55,13 @@ if __name__ == "__main__":
     stats["MR_sjv"] = compute_stats(mr_sjv, "MR_SJV")
 
     # Subjectivity dataset
-    obj_fileid = subjectivity.fileids()[0]  # plot.tok.gt9.5000 
-    subj_fileid = subjectivity.fileids()[1] # quote.tok.gt9.5000
+    obj_fileid = subjectivity.fileids()[0]  # plot.tok.gt9.5000
+    subj_fileid = subjectivity.fileids()[1]  # quote.tok.gt9.5000
     obj_words = subjectivity.sents(fileids=obj_fileid)
     subj_words = subjectivity.sents(fileids=subj_fileid)
     sjv_words = obj_words + subj_words
     stats["SJV"] = compute_stats(sjv_words, "SJV")
-    
+
     # Clean MR
     # Train baseline subjectivity classifier
     exp_subjectivity = BaselineExperiment(task="subjectivity")
@@ -67,7 +70,7 @@ if __name__ == "__main__":
     preds = sjv_classifier.predict(mr_vectors)
 
     # Remove objective sentences
-    mr_sents_filtered = Experiment.removeObjectiveSents(mr_sents, preds)
+    mr_sents_filtered = removeObjectiveSents(mr_sents, preds)
     stats["MR_clean_baseline"] = compute_stats(mr_sents_filtered, "MR_clean_baseline")
 
     stats_df = pd.DataFrame.from_dict(stats, orient="index")
