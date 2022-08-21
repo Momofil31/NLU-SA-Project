@@ -2,9 +2,15 @@ import torch
 from torch import nn
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 from settings import PAD_TOKEN
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 
 class SoftAttention(nn.Module):
+    '''
+        Multilayer perception to learn attention coefficients. 
+        As described in https://arxiv.org/pdf/1409.0473.pdf, Bengio et al. ICLR 2015
+    '''
+
     def __init__(self, dim, hidden_dim, dropout_ratio=0.1):
         super(SoftAttention, self).__init__()
         self.attention = nn.Sequential(
@@ -18,13 +24,14 @@ class SoftAttention(nn.Module):
     def forward(self, context_vector):
         return self.attention(context_vector)
 
-class SentimentGRU(nn.Module):
+
+class BiGRU(nn.Module):
     '''
-        Architecture based on the one seen during lab
+        Architecture based on the one seen during lab.
     '''
 
     def __init__(self, vocab_size, config, pad_index=0):
-        super(SentimentGRU, self).__init__()
+        super(BiGRU, self).__init__()
         self.emb_size = config["emb_size"]
         self.hidden_size = config["hidden_size"]
         self.out_size = config["out_size"]
@@ -37,6 +44,8 @@ class SentimentGRU(nn.Module):
         if self.attention:
             self.att_hidden_size = config["att_hidden_size"]
             self.attention_module = SoftAttention(self.hidden_size*self.num_dir, self.att_hidden_size, dropout_ratio=self.dropout_ratio)
+        if self.num_layers == 1:
+            self.dropout_ratio = 0
 
         self.embedding = nn.Embedding(vocab_size, self.emb_size, padding_idx=pad_index)
         self.utt_encoder = nn.GRU(self.emb_size, self.hidden_size, self.num_layers, bidirectional=self.bidirectional, dropout=self.dropout_ratio)
@@ -63,7 +72,7 @@ class SentimentGRU(nn.Module):
         # "A potential issue with this encoder–decoder approach is that a neural network
         # needs to be able to compress all the necessary information of a source sentence into a fixed-length vector.
         # This may make it difficult for the neural network to cope with long sentences,
-        # especially those that are longer than the sentences in the training corpus." 
+        # especially those that are longer than the sentences in the training corpus."
         # https://arxiv.org/pdf/1409.0473.pdf, Bengio et al. ICLR 2015
         if not self.attention:
             hidden_view = hidden.view(self.num_layers, self.num_dir, batch_size, self.hidden_size)  # 2 for bidirectional
@@ -86,7 +95,7 @@ class SentimentGRU(nn.Module):
         return out
 
 
-class SentimentCNN(nn.Module):
+class TextCNN(nn.Module):
     '''
         Architecture based on: 
         Yoon Kim. 2014. Convolutional Neural Networks for Sentence Classification. 
@@ -102,7 +111,7 @@ class SentimentCNN(nn.Module):
     '''
 
     def __init__(self, vocab_size, config):
-        super(SentimentCNN, self).__init__()
+        super(TextCNN, self).__init__()
         self.emb_size = config["emb_size"]
         self.num_filters = config["num_filters"]
         self.filter_sizes = config["filter_sizes"]
@@ -129,3 +138,17 @@ class SentimentCNN(nn.Module):
         x_fc = torch.cat([x_pool.squeeze(dim=2) for x_pool in x_pool_list], dim=1)
         logits = self.fc(self.dropout(x_fc))
         return logits
+
+
+class TransformerClassifier(nn.Module):
+
+    def __init__(self, config):
+        super(TransformerClassifier, self).__init__()
+        self.out_size = config["out_size"]
+        self.transformer = AutoModelForSequenceClassification.from_pretrained(
+            config["pretrained_model"],
+            num_labels=self.out_size,
+            ignore_mismatched_sizes=True)
+
+    def forward(self, input):
+        return self.transformer(**input, return_dict=True).logits

@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 import itertools
 
+
 class BaselineExperiment:
 
     def __init__(self, task="polarity", sjv_classifier=None, sjv_vectorizer=None):
@@ -21,6 +22,22 @@ class BaselineExperiment:
         self.data_Y = None
         self.sjv_classifier = sjv_classifier
         self.sjv_vectorizer = sjv_vectorizer
+
+    @staticmethod
+    def removeObjectiveSents(docs_sents, mask):
+        i = 0
+        remaining_sents = 0
+        clean_docs = []
+        for doc in docs_sents:
+            clean_docs.append([])
+            for sent in doc:
+                if mask[i] == 1:
+                    clean_docs[-1] += sent
+                    remaining_sents += 1
+                i += 1
+        clean_docs = [" ".join(sents) for sents in clean_docs]
+        print(f"Remaining {remaining_sents} sentences from original {i} sentences count.")
+        return clean_docs
 
     def prepare_data(self):
         print("Loading data")
@@ -33,33 +50,19 @@ class BaselineExperiment:
             self.data_Y = [0] * len(neg_raw) + [1] * len(pos_raw)
 
         elif self.task == "subjectivity":
-            obj_fileid = subjectivity.fileids()[0]  # plot.tok.gt9.5000 
-            subj_fileid = subjectivity.fileids()[1] # quote.tok.gt9.5000
+            obj_fileid = subjectivity.fileids()[0]  # plot.tok.gt9.5000
+            subj_fileid = subjectivity.fileids()[1]  # quote.tok.gt9.5000
 
             # this to avoid splitting words into lists
             obj_raw = subjectivity.raw(fileids=obj_fileid).split('\n')[:5000]
             subj_raw = subjectivity.raw(fileids=subj_fileid).split('\n')[:5000]
             self.data_raw = obj_raw + subj_raw
             self.data_Y = [0] * len(obj_raw) + [1] * len(subj_raw)
-        elif (self.task == "polarity-no-obj-sents"
-            and self.sjv_classifier is not None
-            and self.sjv_vectorizer is not None
-            ):
-            def removeObjectiveSents(docs_sents, mask):
-                i = 0
-                remaining_sents = 0
-                clean_docs = []
-                for doc in docs_sents:
-                    clean_docs.append([])
-                    for sent in doc:
-                        if mask[i] == 1:
-                            clean_docs[-1] += sent
-                            remaining_sents += 1
-                        i += 1
-                clean_docs = [" ".join(sents) for sents in clean_docs]
-                print(f"Remaining {remaining_sents} sentences from original {i} sentences count.")
-                return clean_docs
-                
+        elif (self.task == "polarity-filter"
+              and self.sjv_classifier is not None
+              and self.sjv_vectorizer is not None
+              ):
+
             # get docs divided in sentences
             negative_fileids = movie_reviews.fileids('neg')
             positive_fileids = movie_reviews.fileids('pos')
@@ -70,8 +73,8 @@ class BaselineExperiment:
 
             mr_sjv_vectors = self.sjv_vectorizer.transform(mr_sents)
             pred = self.sjv_classifier.predict(mr_sjv_vectors)
-            
-            self.data_raw = removeObjectiveSents(mr_corpus, pred)
+
+            self.data_raw = BaselineExperiment.removeObjectiveSents(mr_corpus, pred)
             self.data_Y = [0] * len(negative_fileids) + [1] * len(positive_fileids)
         else:
             print("Cannot prepare data. Wrong parameters.")
@@ -81,15 +84,13 @@ class BaselineExperiment:
         print(f"Running experiment {self.task} classification.")
         self.prepare_data()
         vectorizer = CountVectorizer()
-        classifier = MultinomialNB() 
+        classifier = MultinomialNB()
         vectors = vectorizer.fit_transform(self.data_raw)
-        scores = cross_validate(classifier, vectors, self.data_Y, cv=StratifiedKFold(n_splits=N_FOLDS_BASELINE) , scoring=['accuracy', 'f1'], return_estimator=True)
+        scores = cross_validate(classifier, vectors, self.data_Y, cv=StratifiedKFold(n_splits=N_FOLDS_BASELINE), scoring=['accuracy', 'f1'], return_estimator=True)
         best_model = scores["estimator"][np.argmax(scores["test_accuracy"])]
 
         metrics_df = pd.DataFrame.from_dict(scores)
         metrics_df.drop("estimator", axis='columns', inplace=True)
-        metrics_df.loc["max"] = metrics_df[:N_FOLDS_BASELINE].max()
-        metrics_df.loc["min"] = metrics_df[:N_FOLDS_BASELINE].min()
         metrics_df.loc["mean"] = metrics_df[:N_FOLDS_BASELINE].mean()
         metrics_df.loc["std"] = metrics_df[:N_FOLDS_BASELINE].std()
         print(metrics_df)
@@ -101,12 +102,12 @@ class BaselineExperiment:
 if __name__ == "__main__":
     # Run polarity on whole movie review dataset
     exp_polarity = BaselineExperiment(task="polarity")
-    exp_polarity.run()       
+    exp_polarity.run()
 
     # Run subjectivity
     exp_subjectivity = BaselineExperiment(task="subjectivity")
-    sjv_classifier, sjv_vectorizer = exp_subjectivity.run()  
+    sjv_classifier, sjv_vectorizer = exp_subjectivity.run()
 
     # Run polarity on movie review dataset removing objective sentences
-    exp = BaselineExperiment(task="polarity-no-obj-sents", sjv_classifier=sjv_classifier, sjv_vectorizer=sjv_vectorizer)
+    exp = BaselineExperiment(task="polarity-filter", sjv_classifier=sjv_classifier, sjv_vectorizer=sjv_vectorizer)
     exp.run()

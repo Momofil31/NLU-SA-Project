@@ -1,0 +1,5 @@
+,num_sequences,num_words,avg_seq_len,max_seq_len,min_seq_len,lexicon_size,lexicon_size_no_stopwords
+MR,2000,6226700,791.91,2879,19,39768,39587
+MR_sjv,65258,6226700,24.270127800422937,187,1,39768,39587
+SJV,10000,1049750,24.0576,120,10,23906,23737
+MR_clean_baseline,2000,3937817,501.3715,2169,19,30266,30088

@@ -2,6 +2,7 @@ from settings import DEVICE, PAD_TOKEN
 from collections import Counter
 from torch.utils.data import Dataset
 import torch
+from transformers import AutoTokenizer
 
 
 class Lang():
@@ -81,3 +82,28 @@ class CustomDataset (Dataset):
         label = torch.LongTensor(new_item["label"])
         text_lens = torch.LongTensor(lenghts)
         return ({"document": src_docs, "text_lens": text_lens}, label)
+
+
+class TransformerDataset(Dataset):
+
+    def __init__(self, documents, labels, config, task):
+        self.tokenizer = AutoTokenizer.from_pretrained(config["pretrained_model"])
+        self.documents = documents
+        self.labels = labels
+
+        self.docs_tensor = self.tokenizer(self.documents,
+                                          padding='max_length',
+                                          max_length=config["sequence_max_len"][task],
+                                          truncation=True,
+                                          return_tensors="pt")
+
+    def __len__(self):
+        return len(self.documents)
+
+    def __getitem__(self, idx):
+        label = torch.tensor(self.labels[idx])
+        sample = {'input_ids': self.docs_tensor["input_ids"][idx],
+                  'attention_mask': self.docs_tensor["attention_mask"][idx]}
+        if "token_type_ids" in self.docs_tensor.keys():
+            sample["token_type_ids"] = self.docs_tensor["token_type_ids"][idx]
+        return sample, label
