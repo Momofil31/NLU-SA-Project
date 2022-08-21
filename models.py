@@ -14,9 +14,7 @@ class SoftAttention(nn.Module):
     def __init__(self, dim, hidden_dim, dropout_ratio=0.1):
         super(SoftAttention, self).__init__()
         self.attention = nn.Sequential(
-            nn.Linear(dim, hidden_dim),
             nn.Dropout(dropout_ratio),
-            nn.ReLU(),
             nn.Linear(hidden_dim, 1),
             nn.Softmax(dim=0)
         )
