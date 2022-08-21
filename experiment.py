@@ -72,7 +72,7 @@ class Experiment:
             negative_fileids = movie_reviews.fileids('neg')
             positive_fileids = movie_reviews.fileids('pos')
             neg_docs_sents = [movie_reviews.sents(fileids=fileid) for fileid in negative_fileids]
-            pos_docs_sents = [movie_reviews.sents(fileids=fileid) for fileid in negative_fileids]
+            pos_docs_sents = [movie_reviews.sents(fileids=fileid) for fileid in positive_fileids]
             mr_docs_sents = neg_docs_sents + pos_docs_sents
             mr_sents = [" ".join(sent) for doc in mr_docs_sents for sent in doc]
 
