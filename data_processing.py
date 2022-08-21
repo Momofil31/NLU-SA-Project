@@ -87,7 +87,7 @@ class CustomDataset (Dataset):
 class TransformerDataset(Dataset):
 
     def __init__(self, documents, labels, config, task):
-        self.tokenizer = AutoTokenizer.from_pretrained(config["pretrained_model"])
+        self.tokenizer = AutoTokenizer.from_pretrained(config["model_name"])
         self.documents = documents
         self.labels = labels
 

@@ -79,8 +79,7 @@ TextCNN_config = {
 }
 
 Transformer_config = {
-    "model_name": "Transfomer",
-    "pretrained_model": PRETRAINED_MODEL_NAME,
+    "model_name": PRETRAINED_MODEL_NAME,
     "epochs": EPOCHS_PRETRAINED,
     "batch_size": 32,
     "lr": LR_PRETRAINED,
