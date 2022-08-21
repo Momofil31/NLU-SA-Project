@@ -11,11 +11,11 @@ class SoftAttention(nn.Module):
         As described in https://arxiv.org/pdf/1409.0473.pdf, Bengio et al. ICLR 2015
     '''
 
-    def __init__(self, dim, hidden_dim, dropout_ratio=0.1):
+    def __init__(self, dim, dropout_ratio=0.1):
         super(SoftAttention, self).__init__()
         self.attention = nn.Sequential(
             nn.Dropout(dropout_ratio),
-            nn.Linear(hidden_dim, 1),
+            nn.Linear(dim, 1),
             nn.Softmax(dim=0)
         )
 
@@ -41,7 +41,7 @@ class BiGRU(nn.Module):
 
         if self.attention:
             self.att_hidden_size = config["att_hidden_size"]
-            self.attention_module = SoftAttention(self.hidden_size*self.num_dir, self.att_hidden_size, dropout_ratio=self.dropout_ratio)
+            self.attention_module = SoftAttention(self.hidden_size*self.num_dir, dropout_ratio=self.dropout_ratio)
         if self.num_layers == 1:
             self.dropout_ratio = 0
 
