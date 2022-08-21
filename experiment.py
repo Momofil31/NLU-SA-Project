@@ -8,14 +8,14 @@ import pandas as pd
 from baseline import BaselineExperiment
 
 from models import BiGRU, TextCNN, TransformerClassifier
-from utils import init_weights
+from utils import init_weights, removeObjectiveSents, load_pretrained_vectors
 from settings import *
 from data_processing import Lang, CustomDataset, TransformerDataset
 
 from nltk.corpus import movie_reviews, subjectivity
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import f1_score
-
+from torchtext.vocab import FastText
 
 class Experiment:
     def __init__(self, task="polarity", sjv_classifier=None, sjv_vectorizer=None):
@@ -118,10 +118,14 @@ class Experiment:
             if self.lang:
                 vocab_size = len(self.lang.word2id)
                 model = self.ModelType(vocab_size, self.model_config)
+                if self.model_config["pretrained_embeddings"]:
+                    print("Loading pretrained word embeddings")
+                    fast_text_embds = FastText('simple')
+                    embeddings = torch.tensor(load_pretrained_vectors(self.lang.word2id, fast_text_embds), dtype=torch.float)
+                    model.embedding = nn.Embedding.from_pretrained(embeddings, padding_idx=PAD_TOKEN)
             else:
                 model = self.ModelType(self.model_config)
 
-            print(model)
             model.to(DEVICE)
 
             run = wandb.init(
@@ -136,6 +140,7 @@ class Experiment:
                     "optimizer": "Adam"
                 }
             )
+            print(model)
             wandb.watch(model, "gradients", log_freq=5)
             self.optimizer = optim.Adam(model.parameters(), lr=run.config['lr'])
             self.cost_fn = torch.nn.BCEWithLogitsLoss()
@@ -314,7 +319,7 @@ class Experiment:
 
 
 class TransformerExperiment(Experiment):
-    def __init__(self, task="polarity", sjv_classifier=None, sjv_vectorizer=None):
+    def __init__(self, task="polarity", sjv_classifier=None, sjv_vectorizer=None, *args):
         super().__init__(task, sjv_classifier, sjv_vectorizer)
         self.model_config = Transformer_config
         self.ModelType = TransformerClassifier
@@ -335,21 +340,24 @@ class TransformerExperiment(Experiment):
 
 
 class BiGRUExperiment(Experiment):
-    def __init__(self, task="polarity", sjv_classifier=None, sjv_vectorizer=None):
+    def __init__(self, task="polarity", sjv_classifier=None, sjv_vectorizer=None, pretrained_embeddings=False):
         super().__init__(task, sjv_classifier, sjv_vectorizer)
         self.model_config = BiGRU_config
         self.ModelType = BiGRU
+        self.model_config["pretrained_embeddings"] = pretrained_embeddings
 
 
 class BiGRUAttentionExperiment(Experiment):
-    def __init__(self, task="polarity", sjv_classifier=None, sjv_vectorizer=None):
+    def __init__(self, task="polarity", sjv_classifier=None, sjv_vectorizer=None, pretrained_embeddings=False):
         super().__init__(task, sjv_classifier, sjv_vectorizer)
         self.model_config = BiGRUAttention_config
         self.ModelType = BiGRU
+        self.model_config["pretrained_embeddings"] = pretrained_embeddings
 
 
 class TextCNNExperiment(Experiment):
-    def __init__(self, task="polarity", sjv_classifier=None, sjv_vectorizer=None):
+    def __init__(self, task="polarity", sjv_classifier=None, sjv_vectorizer=None, pretrained_embeddings=False):
         super().__init__(task, sjv_classifier, sjv_vectorizer)
         self.model_config = TextCNN_config
         self.ModelType = TextCNN
+        self.model_config["pretrained_embeddings"] = pretrained_embeddings
