@@ -1,6 +1,8 @@
 import torch
 import nltk
+import numpy as np
 import os
+import random
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 # nltk.download("punkt")
@@ -8,6 +10,10 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 # nltk.download("subjectivity")
 
 RANDOM_SEED = 42
+torch.manual_seed(RANDOM_SEED)
+random.seed(RANDOM_SEED)
+np.random.seed(RANDOM_SEED)
+
 N_FOLDS = 5
 N_FOLDS_BASELINE = 5
 TRAIN_TEST_SPLIT = 0.2
