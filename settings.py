@@ -20,8 +20,8 @@ TRAIN_TEST_SPLIT = 0.2
 
 PAD_TOKEN = 0
 
-EPOCHS = 50
-EPOCHS_PRETRAINED = 5
+EPOCHS = 30
+EPOCHS_PRETRAINED = 10
 
 LR = 0.001
 LR_PRETRAINED = 5e-5
@@ -33,6 +33,7 @@ SEQUENCE_MAX_LENGTHS = {
     }
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
 PRETRAINED_MODEL_NAME = "distilbert-base-uncased"
 CLIP_GRADIENTS = 5
 
