@@ -35,6 +35,7 @@ SEQUENCE_MAX_LENGTHS = {
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 PRETRAINED_MODEL_NAME = "distilbert-base-uncased"
+PRETRAINED_MODEL_NAME_POLARITY = "distilbert-base-uncased-finetuned-sst-2-english"
 CLIP_GRADIENTS = 5
 
 WEIGHTS_SAVE_PATH = "./weights"
