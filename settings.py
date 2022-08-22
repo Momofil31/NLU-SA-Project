@@ -45,16 +45,16 @@ BiGRUAttention_config = {
     "model_name": "BiGRUAttention",
     "epochs": EPOCHS,
     "batch_size": 256,
-    "lr": LR,
+    "lr": 0.003,
     "emb_size": 300,
     "hidden_size": 128,
     "out_size": 1,
     "num_layers": 2,
-    "dropout_ratio": 0.5,
+    "dropout_ratio": 0.3,
     "bidirectional": True,
     "attention": True,
     "att_hidden_size": 64,
-    "clip_gradients": CLIP_GRADIENTS
+    "clip_gradients": 0
 }
 
 BiGRU_config = {
@@ -79,8 +79,8 @@ TextCNN_config = {
     "lr": LR,
     "emb_size": 300,
     "out_size": 1,
-    "filter_sizes": [3, 5, 7],
-    "num_filters": [100, 100, 100],
+    "filter_sizes": [3, 5, 7, 7],
+    "num_filters": [100, 100, 100, 100],
     "dropout_ratio": 0.5,
     "clip_gradients": 0
 }
