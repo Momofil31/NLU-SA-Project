@@ -55,7 +55,7 @@ def load_pretrained_vectors(word2idx, embed):
     print("Loading pretrained vectors...")
     # Initilize random embeddings
     embeddings = np.random.uniform(-0.25, 0.25, (len(word2idx), embed.dim))
-    embeddings[word2idx['pad']] = np.zeros((embed.dim,))
+    embeddings[word2idx['<pad>']] = np.zeros((embed.dim,))
 
     # Load Pretrained vectors
     count = 0
