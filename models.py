@@ -234,7 +234,7 @@ class AMCNN(nn.Module):
 
         self.conv_block_lst = nn.ModuleList([
             nn.Sequential(
-                nn.Conv2d(in_channels=self.num_channels, out_channels=self.filter_sizes[i], kernel_size=(self.filter_sizes[i], self.maxlen)),
+                nn.Conv2d(in_channels=self.num_channels, out_channels=self.num_filters[i], kernel_size=(self.filter_sizes[i], self.features_size)),
                 nn.ReLU(),
                 nn.MaxPool2d(kernel_size=(self.maxlen-self.filter_sizes[i]+1, 1)),
                 nn.Flatten(),

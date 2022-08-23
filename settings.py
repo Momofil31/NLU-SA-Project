@@ -99,18 +99,18 @@ Transformer_config = {
 }
 
 AMCNN_config = {
-    "model_name": "distilbert-base-uncased",
+    "model_name": "AMCNN",
     "epochs": EPOCHS,
-    "batch_size": 256,
+    "batch_size": 8,
     "lr": LR,
     "emb_size": 300,
-    "hidden_size": 128,
+    "hidden_size": 64,
     "out_size": 1,
     "num_layers": 2,
     "dropout_ratio": 0.3,
     "bidirectional": True,
-    "filter_sizes": [3, 5, 7],
-    "num_filters": [100, 100, 100],
-    "num_channels": 3,
+    "filter_sizes": [3, 4, 5],
+    "num_filters": [5, 5, 5],
+    "num_channels": 2,
     "clip_gradients": 0
 }
