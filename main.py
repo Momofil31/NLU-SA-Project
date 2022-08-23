@@ -8,6 +8,7 @@ nameToExperiment = {
     "TextCNN": TextCNNExperiment,
     "AMCNN": AMCNNExperiment,
     "Transformer": TransformerExperiment,
+    "Longformer": LongformerExperiment
 }
 
 if __name__ == "__main__":

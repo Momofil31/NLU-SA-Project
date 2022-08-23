@@ -100,7 +100,7 @@ Transformer_config = {
 
 AMCNN_config = {
     "model_name": "AMCNN",
-    "epochs": EPOCHS,
+    "epochs": 15,
     "batch_size": 8,
     "lr": LR,
     "emb_size": 300,
@@ -112,5 +112,18 @@ AMCNN_config = {
     "filter_sizes": [3, 4, 5],
     "num_filters": [5, 5, 5],
     "num_channels": 2,
+    "clip_gradients": 0
+}
+
+Longformer_config = {
+    "model_name": "allenai/longformer-base-4096",
+    "epochs": EPOCHS_PRETRAINED,
+    "batch_size": 8,
+    "lr": LR_PRETRAINED,
+    "sequence_max_len": {"polarity": 2880,
+                         "subjectivity": 128,
+                         "polarity-filter": 2200},
+    "out_size": 1,
+    "pretrained": True,
     "clip_gradients": 0
 }

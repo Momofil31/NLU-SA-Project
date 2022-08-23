@@ -346,6 +346,28 @@ class TransformerExperiment(Experiment):
     def prepare_data(self):
         BaselineExperiment.prepare_data(self)
 
+class LongformerExperiment(Experiment):
+    def __init__(self, task="polarity", sjv_classifier=None, sjv_vectorizer=None, *args):
+        super().__init__(task, sjv_classifier, sjv_vectorizer)
+        self.model_config = Longformer_config
+        self.ModelType = TransformerClassifier
+        if task == "polarity" or task == "polarity-filter":
+            self.model_config["model_name"] = PRETRAINED_MODEL_NAME_POLARITY
+
+    def create_fold(self):
+        train, test, train_y, test_y = train_test_split(self.data_raw, self.data_Y, test_size=TRAIN_TEST_SPLIT,
+                                                        random_state=RANDOM_SEED,
+                                                        shuffle=True,
+                                                        stratify=self.data_Y)
+        train_dataset = TransformerDataset(train, train_y, self.model_config, self.task)
+        test_dataset = TransformerDataset(test, test_y, self.model_config, self.task)
+
+        self.train_loader = DataLoader(train_dataset, batch_size=self.model_config["batch_size"],  shuffle=True)
+        self.test_loader = DataLoader(test_dataset, batch_size=self.model_config["batch_size"])
+
+    def prepare_data(self):
+        BaselineExperiment.prepare_data(self)
+
 
 class BiGRUExperiment(Experiment):
     def __init__(self, task="polarity", sjv_classifier=None, sjv_vectorizer=None, pretrained_embeddings=False):
