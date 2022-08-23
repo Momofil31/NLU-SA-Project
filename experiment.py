@@ -5,6 +5,7 @@ from tqdm.auto import tqdm
 from torch import nn, optim
 from torch.utils.data import DataLoader
 import pandas as pd
+from models import AMCNN
 from baseline import BaselineExperiment
 
 from models import BiGRU, TextCNN, TransformerClassifier
@@ -104,8 +105,11 @@ class Experiment:
 
         words = [word for sample in train for word in sample["document"]]
         self.lang = Lang(words)
-        train_dataset = CustomDataset(train, self.lang)
-        test_dataset = CustomDataset(test, self.lang)
+
+        max_len = self.model_config.get("sequence_max_len")
+        
+        train_dataset = CustomDataset(train, self.lang, max_len=max_len)
+        test_dataset = CustomDataset(test, self.lang, max_len=max_len)
 
         self.train_loader = DataLoader(train_dataset, batch_size=self.model_config["batch_size"], collate_fn=train_dataset.collate_fn,  shuffle=True)
         self.test_loader = DataLoader(test_dataset, batch_size=self.model_config["batch_size"], collate_fn=test_dataset.collate_fn)
@@ -364,3 +368,11 @@ class TextCNNExperiment(Experiment):
         self.model_config = TextCNN_config
         self.ModelType = TextCNN
         self.model_config["pretrained_embeddings"] = pretrained_embeddings
+
+class AMCNNExperiment(Experiment):
+    def __init__(self, task="polarity", sjv_classifier=None, sjv_vectorizer=None, pretrained_embeddings=False):
+        super().__init__(task, sjv_classifier, sjv_vectorizer)
+        self.model_config = AMCNN_config
+        self.ModelType = AMCNN
+        self.model_config["pretrained_embeddings"] = pretrained_embeddings
+        self.model_config["sequence_max_len"] = SEQUENCE_MAX_LENGTHS[self.task]

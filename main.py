@@ -6,15 +6,16 @@ nameToExperiment = {
     "BiGRU": BiGRUExperiment,
     "BiGRUAttention": BiGRUAttentionExperiment,
     "TextCNN": TextCNNExperiment,
-    "Transformer": TransformerExperiment
+    "AMCNN": AMCNNExperiment,
+    "Transformer": TransformerExperiment,
 }
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("experiment", choices=["BiGRU", "BiGRUAttention", "TextCNN", "Transformer"], help="Specify which experiment to run")
+    parser.add_argument("experiment", choices=nameToExperiment.keys(), help="Specify which experiment to run")
     parser.add_argument("task", choices=["polarity", "polarity-filter", "subjectivity"], help="Specify which task to perform")
-    parser.add_argument("-pe", "--pretrained_embeddings",action="store_true",help="Specify if use pretrained embeddings")
-    parser.add_argument("--no_wandb", action="store_true",help="Disable WandB logging.")
+    parser.add_argument("-pe", "--pretrained_embeddings", action="store_true", help="Specify if use pretrained embeddings")
+    parser.add_argument("--no_wandb", action="store_true", help="Disable WandB logging.")
     args = parser.parse_args()
 
     sjv_classifier = None

@@ -150,3 +150,123 @@ class TransformerClassifier(nn.Module):
 
     def forward(self, input):
         return self.transformer(**input, return_dict=True).logits
+
+
+class AMCNNAttention(nn.Module):
+
+    def __init__(self, in_features: int, out_features: int, num_channels: int = 1, mask_prob=0.1):
+        super().__init__()
+        self.num_channels = num_channels
+        self.in_features = in_features
+        self.out_features = out_features
+        self.mask_prob = mask_prob
+        self.mask = nn.Dropout(self.mask_prob)
+
+        self.w_l_lst = nn.ParameterList()
+        self.b_l_lst = nn.ParameterList()
+        self.w_v_l1_lst = nn.ParameterList()
+        self.w_v_l2_lst = nn.ParameterList()
+        self.b_v_l_lst = nn.ParameterList()
+
+        for l in range(self.num_channels):
+            self.w_l_lst.append(nn.parameter.Parameter(torch.empty((self.in_features, self.out_features))))
+            self.b_l_lst.append(nn.parameter.Parameter(torch.empty((1, 1))))
+            self.w_v_l1_lst.append(nn.parameter.Parameter(torch.empty((self.out_features, 1))))
+            self.w_v_l2_lst.append(nn.parameter.Parameter(torch.empty((self.in_features, self.out_features))))
+            self.b_v_l_lst.append(nn.parameter.Parameter(torch.empty((1, 1, self.out_features))))
+
+    def forward(self, inputs):
+        scalar_att_lst = []
+        vector_att_lst = []
+        C_l_lst = []
+        maxlen = inputs.shape[1]
+        for l in range(self.num_channels):  # l index for the channel
+            # Scalar attention
+            mat_l = torch.matmul(inputs, self.w_l_lst[l])
+            mat_lj = torch.tile(mat_l.unsqueeze(1), (1, maxlen, 1, 1))
+            mat_li = torch.tile(inputs.unsqueeze(1), (1, maxlen, 1, 1))
+            mat_li = torch.permute(mat_li, (0, 2, 1, 3))
+            M_l = torch.sum(mat_li * mat_lj, dim=3) + self.b_l_lst[l]  # Formula 4
+
+            A_l = torch.tanh(self.mask(M_l))  # Formula 6
+
+            s_lk = torch.sum(A_l, dim=2).unsqueeze(2)  # Formula 7
+            score_lk = s_lk  # TODO add pad score
+            a_l = torch.softmax(score_lk, dim=1)  # Formula 10
+            scalar_att_lst.append(a_l)
+
+            # Vectorial attention
+            score_l_arrow = torch.sigmoid(torch.matmul(inputs, self.w_v_l2_lst[l])+self.b_v_l_lst[l])
+            score_l_arrow = torch.matmul(score_l_arrow, self.w_v_l1_lst[l])
+            a_l_arrow = torch.softmax(score_l_arrow, dim=1)
+            vector_att_lst.append(a_l_arrow)
+
+            new_inputs = torch.tile(torch.sum(inputs * a_l_arrow, dim=1).unsqueeze(1), (1, maxlen, 1))
+            C_l = a_l * inputs + new_inputs
+
+            C_l = C_l.unsqueeze(3)
+            C_l_lst.append(C_l)
+        C_features = torch.cat(C_l_lst, dim=3)
+        return C_features
+
+
+class AMCNN(nn.Module):
+    def __init__(self, vocab_size, config, pad_index=0) -> None:
+        super().__init__()
+        self.emb_size = config["emb_size"]
+        self.hidden_size = config["hidden_size"]
+        self.out_size = config["out_size"]
+        self.num_layers = config["num_layers"]
+        self.dropout_ratio = config["dropout_ratio"]
+        self.bidirectional = config["bidirectional"]
+
+        self.num_dir = 2 if self.bidirectional else 1
+
+        self.num_filters = config["num_filters"]
+        self.filter_sizes = config["filter_sizes"]
+        self.num_channels = config["num_channels"]
+        self.maxlen = config["sequence_max_len"]
+        self.features_size = self.hidden_size*self.num_dir
+
+        self.embedding = nn.Embedding(vocab_size, self.emb_size, padding_idx=pad_index)
+        self.utt_encoder = nn.GRU(self.emb_size, self.hidden_size, self.num_layers, bidirectional=self.bidirectional, dropout=self.dropout_ratio, batch_first=True)
+        self.attention = AMCNNAttention(self.features_size, self.features_size, self.num_channels)
+
+        self.conv_block_lst = nn.ModuleList([
+            nn.Sequential(
+                nn.Conv2d(in_channels=self.num_channels, out_channels=self.filter_sizes[i], kernel_size=(self.filter_sizes[i], self.maxlen)),
+                nn.ReLU(),
+                nn.MaxPool2d(kernel_size=(self.maxlen-self.filter_sizes[i]+1, 1)),
+                nn.Flatten(),
+            ) for i in range(len(self.filter_sizes))
+        ])
+
+        self.fc1 = nn.LazyLinear(self.out_size)
+
+    def forward(self, inputs):
+        utterance, seq_lengths = inputs.values()
+
+        # utterance.size() = batch_size X seq_len
+        batch_size = utterance.shape[0]
+        utt_emb = self.embedding(utterance)  # utt_emb.size() = batch_size X seq_len X emb_size
+        #print("Utt_emb", utt_emb.shape)
+        # pack_padded_sequence avoid computation over pad tokens reducing the computational cost
+        packed_input = pack_padded_sequence(utt_emb, seq_lengths.cpu().numpy(), batch_first=True)
+        # Process the batch
+        packed_output, (hidden) = self.utt_encoder(packed_input)
+        # Unpack the sequence
+        utt_encoded, input_sizes = pad_packed_sequence(packed_output, batch_first=True)  # utt_encoded.shape = batch_size * seq_len * emb_size
+        # print(utt_encoded.shape)
+
+        C_features = self.attention(utt_encoded)  # batch * seq_len * feats * channels need to permute to feed it to conv2d
+        C_features = torch.permute(C_features, dims=(0, 3, 1, 2))
+        # print(C_features.shape)
+        pools = []
+        for conv_block in self.conv_block_lst:
+            pools.append(conv_block(C_features))
+            # print(pools[-1].shape)
+
+        features = torch.cat(pools, -1)  # should be filter_size * num_filters
+        # print(features.shape)
+        out = self.fc1(features)
+        return out

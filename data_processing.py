@@ -22,10 +22,11 @@ class Lang():
 
 
 class CustomDataset (Dataset):
-    def __init__(self, dataset, lang, unk='<unk>'):
+    def __init__(self, dataset, lang, unk='<unk>', max_len=None):
         self.documents = []
         self.labels = []
         self.unk = unk
+        self.max_len = max_len
 
         for x in dataset:
             self.documents.append(x['document'])
@@ -45,14 +46,28 @@ class CustomDataset (Dataset):
     # Auxiliary methods
     def mapping_seq(self, data, mapper):  # Map sequences to number
         res = []
-        for doc in data:
-            tmp_doc = []
-            for x in doc:
-                if x in mapper:
-                    tmp_doc.append(mapper[x])
-                else:
-                    tmp_doc.append(mapper[self.unk])
-            res.append(tmp_doc)
+        if self.max_len:
+            for doc in data:
+                tmp_doc = []
+                for i, x in enumerate(doc):
+                    if (i >= self.max_len):
+                        break
+                    if x in mapper:
+                        tmp_doc.append(mapper[x])
+                    else:
+                        tmp_doc.append(mapper[self.unk])
+                if len(tmp_doc) < self.max_len:
+                    tmp_doc += [PAD_TOKEN]*(self.max_len - len(tmp_doc))
+                res.append(tmp_doc)
+        else:
+            for doc in data:
+                tmp_doc = []
+                for i, x in enumerate(doc):
+                    if x in mapper:
+                        tmp_doc.append(mapper[x])
+                    else:
+                        tmp_doc.append(mapper[self.unk])
+                res.append(tmp_doc)
         return res
 
     def collate_fn(self, data):

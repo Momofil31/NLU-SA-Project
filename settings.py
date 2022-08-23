@@ -27,12 +27,13 @@ LR = 0.001
 LR_PRETRAINED = 2e-5
 
 SEQUENCE_MAX_LENGTHS = {
-    "polarity": 512, 
+    "polarity": 512,
     "subjectivity": 128,
     "polarity-filter": 512
-    }
+}
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+print(DEVICE)
 
 PRETRAINED_MODEL_NAME = "distilbert-base-uncased"
 PRETRAINED_MODEL_NAME_POLARITY = "distilbert-base-uncased-finetuned-sst-2-english"
@@ -89,10 +90,27 @@ TextCNN_config = {
 Transformer_config = {
     "model_name": PRETRAINED_MODEL_NAME,
     "epochs": EPOCHS_PRETRAINED,
-    "batch_size": 32,
+    "batch_size": 16,
     "lr": LR_PRETRAINED,
     "sequence_max_len": SEQUENCE_MAX_LENGTHS,
     "out_size": 1,
     "pretrained": True,
+    "clip_gradients": 0
+}
+
+AMCNN_config = {
+    "model_name": "distilbert-base-uncased",
+    "epochs": EPOCHS,
+    "batch_size": 256,
+    "lr": LR,
+    "emb_size": 300,
+    "hidden_size": 128,
+    "out_size": 1,
+    "num_layers": 2,
+    "dropout_ratio": 0.3,
+    "bidirectional": True,
+    "filter_sizes": [3, 5, 7],
+    "num_filters": [100, 100, 100],
+    "num_channels": 3,
     "clip_gradients": 0
 }
