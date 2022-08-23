@@ -1,6 +1,8 @@
 import torch.nn as nn
 import numpy as np
 
+from models import AMCNNAttention
+
 
 def init_weights(mat):
     for m in mat.modules():
@@ -16,11 +18,13 @@ def init_weights(mat):
                         nn.init.orthogonal_(param[idx*mul:(idx+1)*mul])
                 elif 'bias' in name:
                     param.data.fill_(0)
-        else:
-            if type(m) in [nn.Linear]:
-                nn.init.uniform_(m.weight, -0.01, 0.01)
-                if m.bias != None:
-                    m.bias.data.fill_(0.01)
+        elif type(m) in [nn.Linear]:
+            nn.init.uniform_(m.weight, -0.01, 0.01)
+            if m.bias != None:
+                m.bias.data.fill_(0.01)
+        elif type(m) in [AMCNNAttention]:
+            for p in m.parameters():
+                nn.init.uniform_(p, -0.01, 0.01)
 
 
 def removeObjectiveSents(docs_sents, mask, tokenized=False):
