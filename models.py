@@ -144,7 +144,7 @@ class TransformerClassifier(nn.Module):
         super(TransformerClassifier, self).__init__()
         self.out_size = config["out_size"]
         self.transformer = AutoModelForSequenceClassification.from_pretrained(
-            config["model_name"],
+            config["pretrained_model"],
             num_labels=self.out_size,
             ignore_mismatched_sizes=True)
 

@@ -88,7 +88,8 @@ TextCNN_config = {
 }
 
 Transformer_config = {
-    "model_name": PRETRAINED_MODEL_NAME,
+    "model_name": "Transformer",
+    "pretrained_model": PRETRAINED_MODEL_NAME,
     "epochs": EPOCHS_PRETRAINED,
     "batch_size": 16,
     "lr": LR_PRETRAINED,
@@ -116,9 +117,10 @@ AMCNN_config = {
 }
 
 Longformer_config = {
-    "model_name": "allenai/longformer-base-4096",
+    "model_name": "Longformer",
+    "pretrained_model": "allenai/longformer-base-4096",
     "epochs": EPOCHS_PRETRAINED,
-    "batch_size": 8,
+    "batch_size": 4,
     "lr": LR_PRETRAINED,
     "sequence_max_len": {"polarity": 2880,
                          "subjectivity": 128,

@@ -330,7 +330,7 @@ class TransformerExperiment(Experiment):
         self.model_config = Transformer_config
         self.ModelType = TransformerClassifier
         if task == "polarity" or task == "polarity-filter":
-            self.model_config["model_name"] = PRETRAINED_MODEL_NAME_POLARITY
+            self.model_config["pretrained_model"] = PRETRAINED_MODEL_NAME_POLARITY
 
     def create_fold(self):
         train, test, train_y, test_y = train_test_split(self.data_raw, self.data_Y, test_size=TRAIN_TEST_SPLIT,
@@ -351,8 +351,6 @@ class LongformerExperiment(Experiment):
         super().__init__(task, sjv_classifier, sjv_vectorizer)
         self.model_config = Longformer_config
         self.ModelType = TransformerClassifier
-        if task == "polarity" or task == "polarity-filter":
-            self.model_config["model_name"] = PRETRAINED_MODEL_NAME_POLARITY
 
     def create_fold(self):
         train, test, train_y, test_y = train_test_split(self.data_raw, self.data_Y, test_size=TRAIN_TEST_SPLIT,
