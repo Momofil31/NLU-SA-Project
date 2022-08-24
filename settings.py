@@ -121,10 +121,10 @@ Longformer_config = {
     "pretrained_model": "allenai/longformer-base-4096",
     "epochs": EPOCHS_PRETRAINED,
     "batch_size": 4,
-    "lr": LR_PRETRAINED,
-    "sequence_max_len": {"polarity": 2880,
+    "lr": 1e-5,
+    "sequence_max_len": {"polarity": 1500,
                          "subjectivity": 128,
-                         "polarity-filter": 2200},
+                         "polarity-filter": 1500},
     "out_size": 1,
     "pretrained": True,
     "clip_gradients": 0
