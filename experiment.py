@@ -14,7 +14,7 @@ from settings import *
 from data_processing import Lang, CustomDataset, TransformerDataset
 
 from nltk.corpus import movie_reviews, subjectivity
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.metrics import f1_score
 from torchtext.vocab import FastText
 
@@ -92,22 +92,39 @@ class Experiment:
             self.data_raw = mr_neg+mr_pos
             self.data_Y = mr_Y_neg + mr_Y_pos
             print("Total samples: ", len(self.data_raw))
-
         else:
             print("Cannot prepare data. Wrong parameters.")
             exit()
 
-    def create_fold(self):
-        train, test, _, _ = train_test_split(self.data_raw, self.data_Y, test_size=TRAIN_TEST_SPLIT,
-                                             random_state=RANDOM_SEED,
-                                             shuffle=True,
-                                             stratify=self.data_Y)
+    def create_folds(self, n_folds=N_FOLDS):
+        skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=RANDOM_SEED)
+        self.folds_idxs = []
+        for idxs in skf.split(self.data_raw, self.data_Y):
+            self.folds_idxs.append(idxs)
+
+    def create_dataloaders(self, fold_idx=0):
+        # indexes = [i for i in range(len(self.data_raw))]
+        # train, test, _, _, idx_tr, idx_ts = train_test_split(self.data_raw, self.data_Y, indexes, test_size=TRAIN_TEST_SPLIT,
+        #                                      random_state=RANDOM_SEED,
+        #                                      shuffle=True,
+        #                                      stratify=self.data_Y)
+        print("Create dataloaders")
+        # get train and test indexes for this fold
+        idx_tr, idx_ts = self.folds_idxs[fold_idx]  # is a tuple
+        train, test = [self.data_raw[idx] for idx in idx_tr], [self.data_raw[idx] for idx in idx_ts]
+
+        # save indexes
+        df_idx_tr = pd.DataFrame(idx_tr)
+        df_idx_ts = pd.DataFrame(idx_ts)
+        pe_string = "pe" if self.model_config.get("pretrained_embeddings") else ""
+        df_idx_tr.to_csv(f"indexes/{self.model_config['model_name']}_{self.task}_{pe_string}_train_{fold_idx:02d}.csv")
+        df_idx_ts.to_csv(f"indexes/{self.model_config['model_name']}_{self.task}_{pe_string}_test_{fold_idx:02d}.csv")
 
         words = [word for sample in train for word in sample["document"]]
         self.lang = Lang(words)
 
         max_len = self.model_config.get("sequence_max_len")
-        
+
         train_dataset = CustomDataset(train, self.lang, max_len=max_len)
         test_dataset = CustomDataset(test, self.lang, max_len=max_len)
 
@@ -116,10 +133,11 @@ class Experiment:
 
     def run(self):
         self.prepare_data()
+        self.create_folds(N_FOLDS)
         models = []
         metrics_list = []
         for fold_idx in range(N_FOLDS):
-            self.create_fold()
+            self.create_dataloaders(fold_idx)
             if self.lang:
                 vocab_size = len(self.lang.word2id)
                 model = self.ModelType(vocab_size, self.model_config)
@@ -132,7 +150,6 @@ class Experiment:
                 model = self.ModelType(self.model_config)
 
             model.to(DEVICE)
-
             run = wandb.init(
                 project=WANDB_PROJECT,
                 entity=WANDB_ENTITY,
@@ -332,11 +349,11 @@ class TransformerExperiment(Experiment):
         if task == "polarity" or task == "polarity-filter":
             self.model_config["pretrained_model"] = PRETRAINED_MODEL_NAME_POLARITY
 
-    def create_fold(self):
-        train, test, train_y, test_y = train_test_split(self.data_raw, self.data_Y, test_size=TRAIN_TEST_SPLIT,
-                                                        random_state=RANDOM_SEED,
-                                                        shuffle=True,
-                                                        stratify=self.data_Y)
+    def create_dataloaders(self, fold_idx):
+        idx_tr, idx_ts = self.folds_idxs[fold_idx]  # is a tuple
+        train, test = [self.data_raw[idx] for idx in idx_tr], [self.data_raw[idx] for idx in idx_ts]
+        train_y, test_y = [self.data_Y[idx] for idx in idx_tr], [self.data_Y[idx] for idx in idx_ts]
+
         train_dataset = TransformerDataset(train, train_y, self.model_config, self.task)
         test_dataset = TransformerDataset(test, test_y, self.model_config, self.task)
 
@@ -346,17 +363,18 @@ class TransformerExperiment(Experiment):
     def prepare_data(self):
         BaselineExperiment.prepare_data(self)
 
+
 class LongformerExperiment(Experiment):
     def __init__(self, task="polarity", sjv_classifier=None, sjv_vectorizer=None, *args):
         super().__init__(task, sjv_classifier, sjv_vectorizer)
         self.model_config = Longformer_config
         self.ModelType = TransformerClassifier
 
-    def create_fold(self):
-        train, test, train_y, test_y = train_test_split(self.data_raw, self.data_Y, test_size=TRAIN_TEST_SPLIT,
-                                                        random_state=RANDOM_SEED,
-                                                        shuffle=True,
-                                                        stratify=self.data_Y)
+    def create_dataloaders(self, fold_idx):
+        idx_tr, idx_ts = self.folds_idxs[fold_idx]  # is a tuple
+        train, test = [self.data_raw[idx] for idx in idx_tr], [self.data_raw[idx] for idx in idx_ts]
+        train_y, test_y = [self.data_Y[idx] for idx in idx_tr], [self.data_Y[idx] for idx in idx_ts]
+
         train_dataset = TransformerDataset(train, train_y, self.model_config, self.task)
         test_dataset = TransformerDataset(test, test_y, self.model_config, self.task)
 
@@ -389,6 +407,7 @@ class TextCNNExperiment(Experiment):
         self.model_config = TextCNN_config
         self.ModelType = TextCNN
         self.model_config["pretrained_embeddings"] = pretrained_embeddings
+
 
 class AMCNNExperiment(Experiment):
     def __init__(self, task="polarity", sjv_classifier=None, sjv_vectorizer=None, pretrained_embeddings=False):
