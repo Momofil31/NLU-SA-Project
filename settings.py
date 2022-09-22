@@ -14,6 +14,9 @@ torch.manual_seed(RANDOM_SEED)
 random.seed(RANDOM_SEED)
 np.random.seed(RANDOM_SEED)
 
+WANDB_PROJECT = "NLU_SA"
+WANDB_ENTITY = "filippomomesso"
+
 N_FOLDS = 5
 N_FOLDS_BASELINE = 5
 TRAIN_TEST_SPLIT = 0.2

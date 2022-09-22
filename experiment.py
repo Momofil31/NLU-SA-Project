@@ -134,8 +134,8 @@ class Experiment:
             model.to(DEVICE)
 
             run = wandb.init(
-                project="NLU_SA",
-                entity="filippomomesso",
+                project=WANDB_PROJECT,
+                entity=WANDB_ENTITY,
                 group=f"{self.model_config['model_name']}",
                 name=f"{self.task}_{self.model_config['model_name']}_fold_{fold_idx:02d}",
                 config={
