@@ -177,7 +177,7 @@ class Experiment:
         metrics_df.loc["std"] = metrics_df[:N_FOLDS].std()
         print(metrics_df)
         pe_string = "pe" if self.model_config.get("pretrained_embeddings") else ""
-        metrics_df.to_csv(f"{STATS_SAVE_PATH}/{self.model_config['model_name']}_{self.task}{pe_string}.csv")
+        metrics_df.to_csv(f"{STATS_SAVE_PATH}/{self.task}/{self.model_config['model_name']}_{self.task}_{pe_string}.csv")
 
         best_model_overall_idx = metrics_df["acc"].idxmax()
         return models[best_model_overall_idx]
