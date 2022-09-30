@@ -16,7 +16,7 @@ from data_processing import Lang, CustomDataset, TransformerDataset
 from nltk.corpus import movie_reviews, subjectivity
 from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.metrics import f1_score
-from torchtext.vocab import FastText
+from torchtext.vocab import GloVe
 
 
 class Experiment:
@@ -143,8 +143,8 @@ class Experiment:
                 model = self.ModelType(vocab_size, self.model_config)
                 if self.model_config["pretrained_embeddings"]:
                     print("Loading pretrained word embeddings")
-                    fast_text_embds = FastText('simple')
-                    embeddings = torch.tensor(load_pretrained_vectors(self.lang.word2id, fast_text_embds), dtype=torch.float)
+                    embds = GloVe(name='840B', dim=300)
+                    embeddings = torch.tensor(load_pretrained_vectors(self.lang.word2id, embds), dtype=torch.float)
                     model.embedding = nn.Embedding.from_pretrained(embeddings, padding_idx=PAD_TOKEN)
             else:
                 model = self.ModelType(self.model_config)
