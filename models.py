@@ -81,6 +81,7 @@ class BiGRU(nn.Module):
                 last_hidden_bwd = last_hidden[1]
                 last_hidden = torch.cat((last_hidden_fwd, last_hidden_bwd), dim=1)
             out = self.fc1(last_hidden)
+            return out
         else:
             # To get a better representation of the sequence it is possible to use a learnable soft attention mechanism
             # to perform a weighted summation of the encoded words similarly to:
@@ -90,7 +91,7 @@ class BiGRU(nn.Module):
             context_vector = utt_encoded * alpha
             context_vector = context_vector.sum(dim=0)
             out = self.fc1(context_vector)
-        return out
+            return out, alpha
 
 
 class TextCNN(nn.Module):

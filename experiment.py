@@ -140,7 +140,7 @@ class Experiment:
             self.create_dataloaders(fold_idx)
             if self.lang:
                 vocab_size = len(self.lang.word2id)
-                self.model_config["vocab_size"] = vocab_size # save vocab size to load model for inference
+                self.model_config["vocab_size"] = vocab_size  # save vocab size to load model for inference
                 model = self.ModelType(vocab_size, self.model_config)
                 if self.model_config["pretrained_embeddings"]:
                     print("Loading pretrained word embeddings")
@@ -151,7 +151,7 @@ class Experiment:
                 model = self.ModelType(self.model_config)
 
             model.to(DEVICE)
-            
+
             pe_string = "_pe" if self.model_config.get("pretrained_embeddings") else ""
             run = wandb.init(
                 project=WANDB_PROJECT,
@@ -252,6 +252,10 @@ class Experiment:
                 inputs[k] = inputs[k].to(DEVICE)
             targets = targets.to(DEVICE)
             outputs = model(inputs)
+            
+            # this is to deal with models returning logits and attention scores, ignoring the latter
+            if type(outputs) is tuple:
+                outputs, *_ = outputs
 
             loss = cost_function(outputs, targets.unsqueeze(-1).float())
             loss.backward()
@@ -296,6 +300,11 @@ class Experiment:
                     inputs[k] = inputs[k].to(DEVICE)
                     targets = targets.to(DEVICE)
                 outputs = model(inputs)
+
+                # this is to deal with models returning logits and attention scores, ignoring the latter
+                if type(outputs) is tuple:
+                    outputs, *_ = outputs
+
                 loss = cost_function(outputs, targets.unsqueeze(-1).float())
 
                 # add batch size
