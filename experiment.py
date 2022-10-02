@@ -140,6 +140,7 @@ class Experiment:
             self.create_dataloaders(fold_idx)
             if self.lang:
                 vocab_size = len(self.lang.word2id)
+                self.model_config["vocab_size"] = vocab_size # save vocab size to load model for inference
                 model = self.ModelType(vocab_size, self.model_config)
                 if self.model_config["pretrained_embeddings"]:
                     print("Loading pretrained word embeddings")
