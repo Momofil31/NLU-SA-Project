@@ -116,9 +116,9 @@ class Experiment:
         # save indexes
         df_idx_tr = pd.DataFrame(idx_tr)
         df_idx_ts = pd.DataFrame(idx_ts)
-        pe_string = "pe" if self.model_config.get("pretrained_embeddings") else ""
-        df_idx_tr.to_csv(f"indexes/{self.model_config['model_name']}_{self.task}_{pe_string}_train_{fold_idx:02d}.csv")
-        df_idx_ts.to_csv(f"indexes/{self.model_config['model_name']}_{self.task}_{pe_string}_test_{fold_idx:02d}.csv")
+        pe_string = "_pe" if self.model_config.get("pretrained_embeddings") else ""
+        df_idx_tr.to_csv(f"indexes/{self.model_config['model_name']}_{self.task}{pe_string}_train_{fold_idx:02d}.csv")
+        df_idx_ts.to_csv(f"indexes/{self.model_config['model_name']}_{self.task}{pe_string}_test_{fold_idx:02d}.csv")
 
         words = [word for sample in train for word in sample["document"]]
         self.lang = Lang(words)
@@ -151,11 +151,13 @@ class Experiment:
                 model = self.ModelType(self.model_config)
 
             model.to(DEVICE)
+            
+            pe_string = "_pe" if self.model_config.get("pretrained_embeddings") else ""
             run = wandb.init(
                 project=WANDB_PROJECT,
                 entity=WANDB_ENTITY,
                 group=f"{self.model_config['model_name']}",
-                name=f"{self.task}_{self.model_config['model_name']}_fold_{fold_idx:02d}",
+                name=f"{self.task}_{self.model_config['model_name']}{pe_string}_fold_{fold_idx:02d}",
                 config={
                     "task": self.task,
                     **self.model_config,
@@ -177,8 +179,8 @@ class Experiment:
         metrics_df.loc["mean"] = metrics_df[:N_FOLDS].mean()
         metrics_df.loc["std"] = metrics_df[:N_FOLDS].std()
         print(metrics_df)
-        pe_string = "pe" if self.model_config.get("pretrained_embeddings") else ""
-        metrics_df.to_csv(f"{STATS_SAVE_PATH}/{self.task}/{self.model_config['model_name']}_{self.task}_{pe_string}.csv")
+        pe_string = "_pe" if self.model_config.get("pretrained_embeddings") else ""
+        metrics_df.to_csv(f"{STATS_SAVE_PATH}/{self.task}/{self.model_config['model_name']}_{self.task}{pe_string}.csv")
 
         best_model_overall_idx = metrics_df["acc"].idxmax()
         return models[best_model_overall_idx]
