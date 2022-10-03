@@ -94,7 +94,7 @@ Transformer_config = {
     "model_name": "Transformer",
     "pretrained_model": PRETRAINED_MODEL_NAME,
     "epochs": EPOCHS_PRETRAINED,
-    "batch_size": 16,
+    "batch_size": 8,
     "lr": LR_PRETRAINED,
     "sequence_max_len": SEQUENCE_MAX_LENGTHS,
     "out_size": 1,
