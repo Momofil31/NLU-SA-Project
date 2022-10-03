@@ -39,7 +39,7 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 print(DEVICE)
 
 PRETRAINED_MODEL_NAME = "distilbert-base-uncased"
-PRETRAINED_MODEL_NAME_POLARITY = "distilbert-base-uncased-finetuned-sst-2-english"
+PRETRAINED_MODEL_NAME_POLARITY = "cardiffnlp/twitter-roberta-base-sentiment-latest"
 CLIP_GRADIENTS = 5
 
 WEIGHTS_SAVE_PATH = "./weights"
