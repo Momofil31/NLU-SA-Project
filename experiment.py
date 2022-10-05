@@ -20,7 +20,7 @@ from torchtext.vocab import GloVe
 
 
 class Experiment:
-    def __init__(self, task="polarity", sjv_classifier=None, sjv_vectorizer=None):
+    def __init__(self, task="polarity", sjv_classifier=None, sjv_vectorizer=None, **kwargs):
         self.model_config = None
         self.ModelType = None
         self.train_loader = None
@@ -117,8 +117,9 @@ class Experiment:
         df_idx_tr = pd.DataFrame(idx_tr)
         df_idx_ts = pd.DataFrame(idx_ts)
         pe_string = "_pe" if self.model_config.get("pretrained_embeddings") else ""
-        df_idx_tr.to_csv(f"indexes/{self.model_config['model_name']}_{self.task}{pe_string}_train_{fold_idx:02d}.csv")
-        df_idx_ts.to_csv(f"indexes/{self.model_config['model_name']}_{self.task}{pe_string}_test_{fold_idx:02d}.csv")
+        truncation_string = self.model_config.get("truncation_strategy", "")
+        df_idx_tr.to_csv(f"indexes/{self.model_config['model_name']}_{self.task}{pe_string}{truncation_string}_train_{fold_idx:02d}.csv")
+        df_idx_ts.to_csv(f"indexes/{self.model_config['model_name']}_{self.task}{pe_string}{truncation_string}_test_{fold_idx:02d}.csv")
 
         words = [word for sample in train for word in sample["document"]]
         self.lang = Lang(words)
@@ -153,11 +154,13 @@ class Experiment:
             model.to(DEVICE)
 
             pe_string = "_pe" if self.model_config.get("pretrained_embeddings") else ""
+            truncation_string = self.model_config.get("truncation_strategy", "")
+
             run = wandb.init(
                 project=WANDB_PROJECT,
                 entity=WANDB_ENTITY,
                 group=f"{self.model_config['model_name']}",
-                name=f"{self.task}_{self.model_config['model_name']}{pe_string}_fold_{fold_idx:02d}",
+                name=f"{self.task}_{self.model_config['model_name']}{pe_string}{truncation_string}_fold_{fold_idx:02d}",
                 config={
                     "task": self.task,
                     **self.model_config,
@@ -180,7 +183,8 @@ class Experiment:
         metrics_df.loc["std"] = metrics_df[:N_FOLDS].std()
         print(metrics_df)
         pe_string = "_pe" if self.model_config.get("pretrained_embeddings") else ""
-        metrics_df.to_csv(f"{STATS_SAVE_PATH}/{self.task}/{self.model_config['model_name']}_{self.task}{pe_string}.csv")
+        truncation_string = self.model_config.get("truncation_strategy", "")
+        metrics_df.to_csv(f"{STATS_SAVE_PATH}/{self.task}/{self.model_config['model_name']}_{self.task}{pe_string}{truncation_string}.csv")
 
         best_model_overall_idx = metrics_df["acc"].idxmax()
         return models[best_model_overall_idx]
@@ -252,7 +256,7 @@ class Experiment:
                 inputs[k] = inputs[k].to(DEVICE)
             targets = targets.to(DEVICE)
             outputs = model(inputs)
-            
+
             # this is to deal with models returning logits and attention scores, ignoring the latter
             if type(outputs) is tuple:
                 outputs, *_ = outputs
@@ -354,9 +358,10 @@ class Experiment:
 
 
 class TransformerExperiment(Experiment):
-    def __init__(self, task="polarity", sjv_classifier=None, sjv_vectorizer=None, *args):
+    def __init__(self, task="polarity", sjv_classifier=None, sjv_vectorizer=None, **kwargs):
         super().__init__(task, sjv_classifier, sjv_vectorizer)
         self.model_config = Transformer_config
+        self.model_config["truncation_strategy"] = kwargs["truncation_strategy"]
         self.ModelType = TransformerClassifier
         if task == "polarity" or task == "polarity-filter":
             self.model_config["pretrained_model"] = PRETRAINED_MODEL_NAME_POLARITY
@@ -377,7 +382,7 @@ class TransformerExperiment(Experiment):
 
 
 class LongformerExperiment(Experiment):
-    def __init__(self, task="polarity", sjv_classifier=None, sjv_vectorizer=None, *args):
+    def __init__(self, task="polarity", sjv_classifier=None, sjv_vectorizer=None, **kwargs):
         super().__init__(task, sjv_classifier, sjv_vectorizer)
         self.model_config = Longformer_config
         self.ModelType = TransformerClassifier
@@ -398,7 +403,7 @@ class LongformerExperiment(Experiment):
 
 
 class BiGRUExperiment(Experiment):
-    def __init__(self, task="polarity", sjv_classifier=None, sjv_vectorizer=None, pretrained_embeddings=False):
+    def __init__(self, task="polarity", sjv_classifier=None, sjv_vectorizer=None, pretrained_embeddings=False, **kwargs):
         super().__init__(task, sjv_classifier, sjv_vectorizer)
         self.model_config = BiGRU_config
         self.ModelType = BiGRU
@@ -406,7 +411,7 @@ class BiGRUExperiment(Experiment):
 
 
 class BiGRUAttentionExperiment(Experiment):
-    def __init__(self, task="polarity", sjv_classifier=None, sjv_vectorizer=None, pretrained_embeddings=False):
+    def __init__(self, task="polarity", sjv_classifier=None, sjv_vectorizer=None, pretrained_embeddings=False, **kwargs):
         super().__init__(task, sjv_classifier, sjv_vectorizer)
         self.model_config = BiGRUAttention_config
         self.ModelType = BiGRU
@@ -414,7 +419,7 @@ class BiGRUAttentionExperiment(Experiment):
 
 
 class TextCNNExperiment(Experiment):
-    def __init__(self, task="polarity", sjv_classifier=None, sjv_vectorizer=None, pretrained_embeddings=False):
+    def __init__(self, task="polarity", sjv_classifier=None, sjv_vectorizer=None, pretrained_embeddings=False, **kwargs):
         super().__init__(task, sjv_classifier, sjv_vectorizer)
         self.model_config = TextCNN_config
         self.ModelType = TextCNN
@@ -422,7 +427,7 @@ class TextCNNExperiment(Experiment):
 
 
 class AMCNNExperiment(Experiment):
-    def __init__(self, task="polarity", sjv_classifier=None, sjv_vectorizer=None, pretrained_embeddings=False):
+    def __init__(self, task="polarity", sjv_classifier=None, sjv_vectorizer=None, pretrained_embeddings=False, **kwargs):
         super().__init__(task, sjv_classifier, sjv_vectorizer)
         self.model_config = AMCNN_config
         self.ModelType = AMCNN

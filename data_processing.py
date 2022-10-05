@@ -3,6 +3,7 @@ from collections import Counter
 from torch.utils.data import Dataset
 import torch
 from transformers import AutoTokenizer
+from nltk.tokenize import word_tokenize
 
 
 class Lang():
@@ -105,12 +106,25 @@ class TransformerDataset(Dataset):
         self.tokenizer = AutoTokenizer.from_pretrained(config["pretrained_model"])
         self.documents = documents
         self.labels = labels
+        max_len = config["sequence_max_len"][task]
+
+        if config.get("truncation_strategy", "head") == "head-tail":
+            # Truncation heuristic as in 5.3.1 Truncation Methods
+            # https://arxiv.org/pdf/1905.05583.pdf
+            # Getting first quarted + last three quarters of the document minus 2 token for [CLS] and [SEP] tokens
+
+            docs = [word_tokenize(doc) for doc in self.documents]
+            docs = [doc[:max_len//4]+doc[len(doc)-max_len//4*3+2:] if len(doc) > max_len else doc for doc in docs ]
+            self.documents = [" ".join(doc) for doc in docs]
+        else:
+            if config.get("truncation_strategy", "head") == "tail":
+                self.tokenizer.truncation_side = 'left'
 
         self.docs_tensor = self.tokenizer(self.documents,
-                                          padding='max_length',
-                                          max_length=config["sequence_max_len"][task],
-                                          truncation=True,
-                                          return_tensors="pt")
+                                              padding='max_length',
+                                              max_length=max_len,
+                                              truncation=True,
+                                              return_tensors="pt")
 
     def __len__(self):
         return len(self.documents)
