@@ -17,7 +17,8 @@ def compute_stats(data, name):
     seq_lens = [len(sents) for sents in data]
     stats["num_sequences"] = len(data)
     stats["num_words"] = sum([len(sent) for sents in data for sent in sents])
-    stats["avg_seq_len"] = np.average(seq_lens)
+    stats["avg_seq_len"] = np.average(seq_lens).round(decimals=2)
+    stats["std_seq_len"] = np.std(seq_lens).round(decimals=2)
     stats["max_seq_len"] = np.max(seq_lens)
     stats["min_seq_len"] = np.min(seq_lens)
 
@@ -70,7 +71,7 @@ if __name__ == "__main__":
     preds = sjv_classifier.predict(mr_vectors)
 
     # Remove objective sentences
-    mr_sents_filtered = removeObjectiveSents(mr_sents, preds)
+    mr_sents_filtered = removeObjectiveSents(mr_sents, preds, tokenized=True)
     stats["MR_clean_baseline"] = compute_stats(mr_sents_filtered, "MR_clean_baseline")
 
     stats_df = pd.DataFrame.from_dict(stats, orient="index")
