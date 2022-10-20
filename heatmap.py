@@ -1,6 +1,9 @@
 '''
     Code to create json to be used with neat-vision for generating SVG heatmaps.
     https://cbaziotis.github.io/neat-vision/
+
+    Outputs in ./heatmaps/ json objects in format like:
+    [most_confident_neg, most_confident_pos, most_confident_wrong_neg, most_confident_wrong_pos]
 '''
 
 import argparse
