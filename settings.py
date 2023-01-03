@@ -119,16 +119,31 @@ AMCNN_config = {
     "clip_gradients": 0
 }
 
-Longformer_config = {
-    "model_name": "Longformer",
-    "pretrained_model": "allenai/longformer-base-4096",
-    "epochs": EPOCHS_PRETRAINED,
-    "batch_size": 4,
-    "lr": 1e-5,
-    "sequence_max_len": {"polarity": 1500,
-                         "subjectivity": 128,
-                         "polarity-filter": 1500},
-    "out_size": 1,
-    "pretrained": True,
-    "clip_gradients": 0
+LongSequence_config = {
+    "Longformer": {
+        "model_name": "Longformer",
+        "pretrained_model": "allenai/longformer-base-4096",
+        "epochs": EPOCHS_PRETRAINED,
+        "batch_size": 4,
+        "lr": 1e-5,
+        "sequence_max_len": {"polarity": 1500,
+                             "subjectivity": 128,
+                             "polarity-filter": 1500},
+        "out_size": 1,
+        "pretrained": True,
+        "clip_gradients": 0
+    },
+    "BigBird": {
+        "model_name": "BigBird",
+        "pretrained_model": "google/bigbird-roberta-base",
+        "epochs": EPOCHS_PRETRAINED,
+        "batch_size": 4,
+        "lr": 1e-5,
+        "sequence_max_len": {"polarity": 1024,
+                             "subjectivity": 128,
+                             "polarity-filter": 1024},
+        "out_size": 1,
+        "pretrained": True,
+        "clip_gradients": 0
+    }
 }

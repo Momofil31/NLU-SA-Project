@@ -10,5 +10,5 @@ spacy
 scikit-learn
 wandb
 transformers
-
+sentencepiece
 

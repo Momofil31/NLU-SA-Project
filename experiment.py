@@ -381,10 +381,10 @@ class TransformerExperiment(Experiment):
         BaselineExperiment.prepare_data(self)
 
 
-class LongformerExperiment(Experiment):
+class LongSequenceExperiment(Experiment):
     def __init__(self, task="polarity", sjv_classifier=None, sjv_vectorizer=None, **kwargs):
         super().__init__(task, sjv_classifier, sjv_vectorizer)
-        self.model_config = Longformer_config
+        self.model_config = LongSequence_config[kwargs["model"]]
         self.ModelType = TransformerClassifier
 
     def create_dataloaders(self, fold_idx):
