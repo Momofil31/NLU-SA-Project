@@ -1,5 +1,5 @@
-,num_sequences,num_words,avg_seq_len,std_seq_len,max_seq_len,min_seq_len,lexicon_size,lexicon_size_no_stopwords
-MR,2000,6226700,791.91,347.25,2879,19,39768,39587
-MR_sjv,65258,6226700,24.27,14.44,187,1,39768,39587
-SJV,10000,1049750,24.06,9.94,120,10,23906,23737
-MR_clean_baseline,2000,3937817,501.37,257.57,2169,19,30266,30088
+,num_sequences,num_words,avg_seq_len,std_seq_len,max_seq_len,min_seq_len,lexicon_size,lexicon_size_no_stopwords,lexicon_intersection_size,most_common_words_neg,most_common_words_pos,most_common_words_intersect,neg_only_words,pos_only_words
+MR,2000,6226700,791.91,347.25,2879,19,39768,39587,18954.0,"['film', 'one', 'movie', 'like', 'good', 'story', 'time', 'also', 'even', 'well']","['film', 'movie', 'one', 'like', 'even', 'time', 'good', 'would', 'get', 'bad']","['one', 'good', 'like', 'film', 'movie', 'time', 'even']",11282.0,9351.0
+MR_sjv,65258,6226700,24.27,14.44,187,1,39768,39587,,,,,,
+SJV,10000,1049750,24.06,9.94,120,10,23906,23737,6243.0,"['life', 'one', 'love', 'story', 'new', 'young', 'world', 'man', 'two', 'film']","['film', 'movie', 'one', '--', 'like', 'story', 'much', 'even', 'good', 'time']","['one', 'film', 'story']",9074.0,8420.0
+MR_clean_baseline,2000,3937817,501.37,257.57,2169,19,30266,30088,13667.0,"['film', 'movie', 'one', 'like', 'even', 'good', 'would', 'much', 'bad', 'time']","['film', 'movie', 'one', 'like', 'good', 'well', 'even', 'story', 'much', 'character']","['one', 'much', 'good', 'like', 'film', 'movie', 'even']",7949.0,8472.0

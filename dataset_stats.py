@@ -12,7 +12,7 @@ import string
 from utils import removeObjectiveSents
 
 
-def compute_stats(data, name):
+def compute_stats(data, name, neg=None, pos=None):
     stats = {}
     seq_lens = [len(sents) for sents in data]
     stats["num_sequences"] = len(data)
@@ -30,6 +30,18 @@ def compute_stats(data, name):
 
     stats["lexicon_size"] = len(lexicon)
     stats["lexicon_size_no_stopwords"] = len(lexicon_filtered)
+
+    if pos is not None and neg is not None:
+        filtered_neg = [w for doc in neg for w in doc if not w in NLTK_STOP_WORDS]
+        filtered_pos = [w for doc in pos for w in doc if not w in NLTK_STOP_WORDS]
+        lexicon_intersection = set(filtered_neg).intersection(set(filtered_pos))
+        stats["lexicon_intersection_size"] = len(lexicon_intersection)
+        stats["most_common_words_neg"] = [w for w, _ in nltk.FreqDist(filtered_neg).most_common(10)]
+        stats["most_common_words_pos"] = [w for w, _ in nltk.FreqDist(filtered_pos).most_common(10)]
+        intersect_common_words = set(stats["most_common_words_neg"]).intersection(set(stats["most_common_words_pos"]))
+        stats["most_common_words_intersect"] = list(intersect_common_words)
+        stats["neg_only_words"] = len([w for w in set(filtered_neg) if w not in lexicon_intersection])
+        stats["pos_only_words"] = len([w for w in set(filtered_pos) if w not in lexicon_intersection])
     return stats
 
 
@@ -49,7 +61,7 @@ if __name__ == "__main__":
     mr_sents = mr_neg_sents + mr_pos_sents
     mr_words = mr_neg_words + mr_pos_words
 
-    stats["MR"] = compute_stats(mr_words, "MR")
+    stats["MR"] = compute_stats(mr_words, "MR", mr_pos_words, mr_neg_words)
 
     # Treating MR as subjectivity dataset (list of sentences)
     mr_sjv = [sent for doc in mr_sents for sent in doc]
@@ -61,7 +73,7 @@ if __name__ == "__main__":
     obj_words = subjectivity.sents(fileids=obj_fileid)
     subj_words = subjectivity.sents(fileids=subj_fileid)
     sjv_words = obj_words + subj_words
-    stats["SJV"] = compute_stats(sjv_words, "SJV")
+    stats["SJV"] = compute_stats(sjv_words, "SJV", obj_words, subj_words)
 
     # Clean MR
     # Train baseline subjectivity classifier
@@ -72,7 +84,7 @@ if __name__ == "__main__":
 
     # Remove objective sentences
     mr_sents_filtered = removeObjectiveSents(mr_sents, preds, tokenized=True)
-    stats["MR_clean_baseline"] = compute_stats(mr_sents_filtered, "MR_clean_baseline")
+    stats["MR_clean_baseline"] = compute_stats(mr_sents_filtered, "MR_clean_baseline", mr_sents_filtered[:1000], mr_sents_filtered[1000:])
 
     stats_df = pd.DataFrame.from_dict(stats, orient="index")
     stats_df.to_csv(f"{STATS_SAVE_PATH}/datasets.csv")
