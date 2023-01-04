@@ -72,6 +72,7 @@ if __name__ == "__main__":
     # run model
     y_pred = []
     outputs_list = []
+    inputs_list = []
     y_gt = []
     attentions_list = []
 
@@ -91,6 +92,7 @@ if __name__ == "__main__":
             y_gt += targets.int().tolist()
 
             attentions_list += attentions.sqrt().permute(1, 0, 2).squeeze().tolist()  # permute attention tensor to batch * seq_len * attention_scalar
+            inputs_list += inputs["document"].int().squeeze().tolist()
 
     # Compute and print metrics
     f1 = f1_score(y_gt, y_pred)
@@ -120,9 +122,15 @@ if __name__ == "__main__":
     # Make json
     heatmap_data = []
     for idx in [most_confident_neg, most_confident_pos, most_confident_wrong_neg, most_confident_wrong_pos]:
-        document = data_loader.dataset.documents[idx]
+        document = inputs_list[idx]
+        document_text = []
+        for word_idx in document:
+            if word_idx == 0:
+                break
+            document_text.append(exp.lang.id2word[word_idx])
+
         heatmap_entry = dict()
-        heatmap_entry["text"] = document
+        heatmap_entry["text"] = document_text
         heatmap_entry["label"] = y_gt[idx]
         heatmap_entry["prediction"] = y_pred[idx]
         heatmap_entry["posterior"] = outputs_list[idx]
