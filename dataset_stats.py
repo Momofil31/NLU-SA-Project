@@ -40,8 +40,10 @@ def compute_stats(data, name, neg=None, pos=None):
         stats["most_common_words_pos"] = [w for w, _ in nltk.FreqDist(filtered_pos).most_common(10)]
         intersect_common_words = set(stats["most_common_words_neg"]).intersection(set(stats["most_common_words_pos"]))
         stats["most_common_words_intersect"] = list(intersect_common_words)
-        stats["neg_only_words"] = len([w for w in set(filtered_neg) if w not in lexicon_intersection])
-        stats["pos_only_words"] = len([w for w in set(filtered_pos) if w not in lexicon_intersection])
+        stats["neg_only_words_len"] = len([w for w in set(filtered_neg) if w not in lexicon_intersection])
+        stats["neg_only_words"] = [w for w in set(filtered_neg) if w not in lexicon_intersection]
+        stats["pos_only_words_len"] = len([w for w in set(filtered_pos) if w not in lexicon_intersection])
+        stats["pos_only_words"] = [w for w in set(filtered_pos) if w not in lexicon_intersection]
     return stats
 
 
