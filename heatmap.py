@@ -108,6 +108,7 @@ if __name__ == "__main__":
     wrong_predictions_pos = [idx for idx, (pred, label) in enumerate(zip(y_pred, y_gt)) if pred != label and label == 1]
     print(wrong_predictions_neg, len(wrong_predictions_neg))
     print(wrong_predictions_pos, len(wrong_predictions_pos))
+    wrong_predictions = wrong_predictions_neg + wrong_predictions_pos
 
     most_confident_wrong_neg = wrong_predictions_neg[0]
     most_confident_wrong_pos = wrong_predictions_pos[0]
@@ -121,7 +122,7 @@ if __name__ == "__main__":
 
     # Make json
     heatmap_data = []
-    for idx in [most_confident_neg, most_confident_pos, most_confident_wrong_neg, most_confident_wrong_pos]:
+    for idx in [most_confident_neg, most_confident_pos, most_confident_wrong_neg, most_confident_wrong_pos] + wrong_predictions:
         document = inputs_list[idx]
         document_text = []
         for word_idx in document:
