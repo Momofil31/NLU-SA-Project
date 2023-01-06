@@ -63,5 +63,8 @@ To corroborate the hypothesis that the baseline model lears to classify the subj
 
 >"I felt betrayed and stunned, but I knew I had to move on and find a new situation-based opportunity, even if it meant leaving behind the familiar Composers' Castle and the territorial Marjorie and Margaret."
 
-The baseline model is not able to correctly classify these sentences, as expected.
+The baseline model is not able to correctly classify these sentences, as expected. To run this experiment, use the following command:
+```
+python adversarial_examples.py <ModelName> <Task> <...args>
+```
                       
